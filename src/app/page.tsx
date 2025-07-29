@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoSearchTabs } from "@/components/dashboard/video-search-tabs";
-import { VideoCard } from "@/components/dashboard/video-card";
 import { AnalysisDialog } from "@/components/dashboard/analysis-dialog";
 import { getMockVideos, type Video } from "@/lib/data";
+import { VideoTable } from "@/components/dashboard/video-table";
+import { TableRow, TableCell } from "@/components/ui/table";
 
 type AnalysisType = "content" | "comments";
 
@@ -43,25 +44,20 @@ export default function DashboardPage() {
 
         <VideoSearchTabs onSearch={handleSearch} isLoading={isLoading} />
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {isLoading &&
-            Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex flex-col space-y-3">
-                <Skeleton className="h-[180px] w-full rounded-xl" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-5/6" />
-                  <Skeleton className="h-4 w-3/4" />
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+          {isLoading ? (
+             <div className="p-4">
+                <div className="space-y-3">
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
                 </div>
               </div>
-            ))}
-
-          {!isLoading && videos.map((video) => (
-            <VideoCard
-              key={video.id}
-              video={video}
-              onAnalyze={handleOpenDialog}
-            />
-          ))}
+          ) : (
+            <VideoTable videos={videos} onAnalyze={handleOpenDialog} />
+          )}
         </div>
       </div>
       

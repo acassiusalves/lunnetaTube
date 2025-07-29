@@ -52,7 +52,7 @@ export default function RootLayout({
                   </Link>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <Link href="#" legacyBehavior passHref>
+                  <Link href="/trending" legacyBehavior passHref>
                     <SidebarMenuButton>
                       <TrendingUp />
                       <span>Tendências</span>

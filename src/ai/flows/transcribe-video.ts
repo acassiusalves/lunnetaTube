@@ -48,7 +48,7 @@ const transcribeVideoFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input, {
-      model: 'gemini-1.5-pro',
+      model: 'googleai/gemini-1.5-pro',
     });
     return output!;
   }

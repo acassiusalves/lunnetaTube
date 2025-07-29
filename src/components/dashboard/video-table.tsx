@@ -28,6 +28,7 @@ import {
   PlaySquare,
   MessagesSquare,
   Sparkles,
+  UserSquare,
 } from "lucide-react";
 
 interface VideoTableProps {
@@ -70,8 +71,7 @@ export function VideoTable({ videos, onAnalyze }: VideoTableProps) {
             <TableCell>
               <div className="flex items-start gap-4">
                 <Link href={video.videoUrl} target="_blank" rel="noopener noreferrer">
-                  {/* Usando a tag <img> padrão para garantir que a imagem apareça sem precisar reiniciar o servidor */}
-                  <img
+                  <Image
                     src={video.thumbnailUrl}
                     alt={video.title}
                     width={120}
@@ -85,6 +85,10 @@ export function VideoTable({ videos, onAnalyze }: VideoTableProps) {
                     <p className="font-medium leading-tight">{video.title}</p>
                    </Link>
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                     <div className="flex items-center gap-1">
+                       <UserSquare className="h-3 w-3" />
+                       <span>{video.channel}</span>
+                    </div>
                     <div className="flex items-center gap-1">
                        <Clapperboard className="h-3 w-3" />
                        <span>{video.category}</span>

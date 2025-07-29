@@ -42,17 +42,6 @@ export interface Video {
   dataAiHint: string;
 }
 
-// Real YouTube Video IDs
-const mockVideoIds = [
-  'eW7T3w_3sZg', // Product Management Guide
-  'u6gSSpfOKa4', // How to Start a SaaS Business
-  '7Tq8-2yzt4E', // UX Design Principles for Beginners
-  'a25J2r9T6oM', // Top 5 Marketing Strategies
-  'v4c4L-EvjN8', // Deep Dive into Machine Learning
-  '8B5k_2xK3iU', // Mastering Financial Freedom
-];
-
-
 const mockVideos: Video[] = [
   {
     id: 'eW7T3w_3sZg',

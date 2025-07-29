@@ -45,7 +45,7 @@ export default function RootLayout({
               <SidebarMenu>
                 <SidebarMenuItem>
                   <Link href="/" legacyBehavior passHref>
-                    <SidebarMenuButton isActive>
+                    <SidebarMenuButton>
                       <LayoutDashboard />
                       <span>Painel</span>
                     </SidebarMenuButton>
@@ -60,7 +60,7 @@ export default function RootLayout({
                   </Link>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <Link href="#" legacyBehavior passHref>
+                  <Link href="/settings" legacyBehavior passHref>
                     <SidebarMenuButton>
                       <Settings />
                       <span>Configurações</span>

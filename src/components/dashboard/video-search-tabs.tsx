@@ -56,7 +56,7 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="country">País</Label>
-                  <Select>
+                  <Select defaultValue="br">
                     <SelectTrigger id="country">
                       <SelectValue placeholder="Selecione um país" />
                     </SelectTrigger>
@@ -71,7 +71,7 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="views">Mínimo de Visualizações</Label>
-                  <Input id="views" type="number" placeholder="ex: 100000" />
+                  <Input id="views" type="number" placeholder="ex: 100000" defaultValue={100000} />
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-4">
@@ -122,7 +122,7 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
                 </div>
                  <div className="space-y-2">
                   <Label htmlFor="country-trending">País</Label>
-                  <Select>
+                  <Select defaultValue="br">
                     <SelectTrigger id="country-trending">
                       <SelectValue placeholder="Selecione um país" />
                     </SelectTrigger>

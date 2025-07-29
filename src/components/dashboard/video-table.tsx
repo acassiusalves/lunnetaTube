@@ -37,7 +37,9 @@ interface VideoTableProps {
 
 export function VideoTable({ videos, onAnalyze }: VideoTableProps) {
   const formatNumber = (num: number) => {
-    return new Intl.NumberFormat("pt-BR").format(num);
+    return new Intl.NumberFormat("pt-BR", {
+      notation: "standard",
+    }).format(num);
   };
 
   const formatDate = (dateString: string) => {

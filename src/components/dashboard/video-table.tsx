@@ -26,7 +26,8 @@ import {
   ExternalLink,
   MoreVertical,
   PlaySquare,
-  MessagesSquare
+  MessagesSquare,
+  Sparkles,
 } from "lucide-react";
 
 interface VideoTableProps {

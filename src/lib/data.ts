@@ -137,5 +137,8 @@ const mockVideos: Video[] = [
 
 export const getMockVideos = (): Video[] => {
   // In a real app, this would fetch from an API
-  return mockVideos;
+  return mockVideos.map(video => ({
+    ...video,
+    thumbnailUrl: `https://i.ytimg.com/vi/${Math.random().toString(36).substring(7)}/hqdefault.jpg`
+  }));
 };

@@ -44,7 +44,7 @@ export default function RootLayout({
             <SidebarContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <Link href="/" legacyBehavior passHref>
+                  <Link href="/">
                     <SidebarMenuButton>
                       <LayoutDashboard />
                       <span>Painel</span>
@@ -52,7 +52,7 @@ export default function RootLayout({
                   </Link>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <Link href="/trending" legacyBehavior passHref>
+                  <Link href="/trending">
                     <SidebarMenuButton>
                       <TrendingUp />
                       <span>Tendências</span>
@@ -60,7 +60,7 @@ export default function RootLayout({
                   </Link>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <Link href="/settings" legacyBehavior passHref>
+                  <Link href="/settings">
                     <SidebarMenuButton>
                       <Settings />
                       <span>Configurações</span>

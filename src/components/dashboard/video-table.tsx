@@ -32,6 +32,7 @@ import {
   ChevronUp,
   Tag,
   Loader2,
+  Clock,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Avatar } from "../ui/avatar";
@@ -183,6 +184,10 @@ export function VideoTable({
                         <div className="flex items-center gap-1.5">
                           <Clapperboard className="h-4 w-4 text-gray-500" />
                           <span>{video.category}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <Clock className="h-4 w-4 text-gray-500" />
+                            <span>{video.duration}</span>
                         </div>
                         {video.tags && video.tags.length > 0 && (
                            <div className="flex items-center gap-1.5">

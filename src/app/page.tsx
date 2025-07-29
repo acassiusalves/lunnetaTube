@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoSearchTabs, type SearchParams } from "@/components/dashboard/video-search-tabs";
 import { AnalysisDialog } from "@/components/dashboard/analysis-dialog";
-import { Video, mapApiToVideo } from "@/lib/data";
+import { Video, mapApiToVideo, CommentData } from "@/lib/data";
 import { VideoTable, type SortConfig } from "@/components/dashboard/video-table";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { searchYoutubeVideos } from "@/ai/flows/youtube-search";
+import { fetchTopComments } from "@/ai/flows/fetch-comments";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 
 type AnalysisType = "content" | "comments";
-const VIDEOS_PER_PAGE = 50;
 const API_KEY_STORAGE_ITEM = "youtube_api_key";
 
 export default function DashboardPage() {
@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [currentSearch, setCurrentSearch] = useState<SearchParams | null>(null);
   
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSearch = async (params: SearchParams) => {
@@ -109,6 +110,50 @@ export default function DashboardPage() {
     setSortConfig({ key, direction });
   };
   
+  const handleFetchComments = async (videoId: string) => {
+    const videoIndex = allVideos.findIndex(v => v.id === videoId);
+    if (videoIndex === -1 || allVideos[videoIndex].commentsData.length > 0) {
+      return; // Already fetched or video not found
+    }
+    
+    setIsLoadingComments(true);
+    const apiKey = localStorage.getItem(API_KEY_STORAGE_ITEM);
+    if (!apiKey) {
+      toast({
+        title: "Erro",
+        description: "Chave de API do YouTube não encontrada.",
+        variant: "destructive"
+      });
+      setIsLoadingComments(false);
+      return;
+    }
+
+    try {
+      const result = await fetchTopComments({ videoId, apiKey });
+      if (result.error) {
+        toast({
+          title: "Erro ao Buscar Comentários",
+          description: result.error,
+          variant: "destructive"
+        });
+      } else {
+        const updatedVideos = [...allVideos];
+        updatedVideos[videoIndex].commentsData = result.comments as CommentData[];
+        setAllVideos(updatedVideos);
+        setDisplayedVideos(updatedVideos);
+      }
+    } catch (e: any) {
+        toast({
+          title: "Erro Inesperado",
+          description: e.message || "Ocorreu um erro ao buscar os comentários.",
+          variant: "destructive"
+        });
+    } finally {
+        setIsLoadingComments(false);
+    }
+  };
+
+
   const sortedVideos = useMemo(() => {
     const sortableVideos = [...displayedVideos];
     if (sortConfig.key) {
@@ -165,6 +210,8 @@ export default function DashboardPage() {
             <VideoTable 
               videos={sortedVideos} 
               onAnalyze={handleOpenDialog}
+              onFetchComments={handleFetchComments}
+              isLoadingComments={isLoadingComments}
               sortConfig={sortConfig}
               onSort={handleSort}
             />

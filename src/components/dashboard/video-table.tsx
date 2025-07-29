@@ -30,9 +30,12 @@ import {
   ChevronDown,
   ChevronUp,
   Tag,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Avatar } from "../ui/avatar";
+import { Skeleton } from "../ui/skeleton";
+
 
 export interface SortConfig {
   key: keyof Video | null;
@@ -41,6 +44,8 @@ export interface SortConfig {
 interface VideoTableProps {
   videos: Video[];
   onAnalyze: (video: Video, type: "content" | "comments") => void;
+  onFetchComments: (videoId: string) => void;
+  isLoadingComments: boolean;
   sortConfig: SortConfig;
   onSort: (key: keyof Video) => void;
 }
@@ -48,10 +53,20 @@ interface VideoTableProps {
 export function VideoTable({
   videos,
   onAnalyze,
+  onFetchComments,
+  isLoadingComments,
   sortConfig,
   onSort,
 }: VideoTableProps) {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  const toggleRowExpansion = (videoId: string) => {
+    const newExpandedRow = expandedRow === videoId ? null : videoId;
+    setExpandedRow(newExpandedRow);
+    if (newExpandedRow) {
+      onFetchComments(videoId);
+    }
+  };
 
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -94,22 +109,7 @@ export function VideoTable({
   };
 
   const ShortsIcon = () => (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 1024 1024"
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-5 w-5"
-    >
-      <path
-        fill="#FF0000"
-        d="M840.4 300H183.6c-19.7 0-30.7 20.8-18.5 35l328.4 444.9c14.3 19.4 46.2 19.4 60.5 0L858.9 335c12.2-14.2 1.2-35-18.5-35z"
-      ></path>
-      <path
-        fill="#FFFFFF"
-        d="m412 654.5l234-142.9c12.7-7.7 12.7-25.2 0-32.9l-234-142.9c-12.2-7.4-27.4 1.8-27.4 16.4v285.8c0 14.6 15.2 23.8 27.4 16.5z"
-      ></path>
-    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256"><g fill="none"><rect width="256" height="256" fill="#F0F" rx="60"/><path fill="#FF0000" d="M164.38 228.38a16 16 0 0 1-15.06-1.63L78.15 178a32 32 0 0 1-16.15-27.63v-48.74a32 32 0 0 1 16.15-27.63l71.17-48.74a16 16 0 0 1 23.44 14.63v128.74a16 16 0 0 1-8.38 14.25Z"/><path fill="#FFF" d="m151.05 142.01l-43-24.8a12 12 0 0 1 0-20.76l43-24.81c11.4-6.58 25.95 2.04 25.95 15.38v49.61c0 13.34-14.55 21.96-25.95 15.38Z"/></g></svg>
   );
 
   return (
@@ -187,9 +187,7 @@ export function VideoTable({
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() =>
-                        setExpandedRow(expandedRow === video.id ? null : video.id)
-                      }
+                      onClick={() => toggleRowExpansion(video.id)}
                     >
                       {expandedRow === video.id ? (
                         <ChevronUp className="h-4 w-4" />
@@ -244,23 +242,29 @@ export function VideoTable({
                           <CardTitle className="text-base">Comentários Relevantes</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-4">
-                          {video.commentsData && video.commentsData.length > 0 ? (
-                            video.commentsData.map((comment, index) => (
-                              <div key={index} className="flex items-start gap-3 text-sm">
-                                <Avatar className="h-8 w-8 border">
-                                  <img src={comment.authorImageUrl} alt={comment.author} data-ai-hint="user avatar" className="h-full w-full rounded-full object-cover" />
-                                </Avatar>
-                                <div>
-                                  <p className="font-semibold">{comment.author}</p>
-                                  <p className="text-muted-foreground">{comment.text}</p>
+                        {isLoadingComments && video.commentsData.length === 0 ? (
+                            <div className="flex items-center justify-center p-4">
+                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                            </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {video.commentsData && video.commentsData.length > 0 ? (
+                              video.commentsData.map((comment, index) => (
+                                <div key={index} className="flex items-start gap-3 text-sm">
+                                  <Avatar className="h-8 w-8 border">
+                                    <img src={comment.authorImageUrl} alt={comment.author} data-ai-hint="user avatar" className="h-full w-full rounded-full object-cover" />
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-semibold">{comment.author}</p>
+                                    <p className="text-muted-foreground">{comment.text}</p>
+                                  </div>
                                 </div>
-                              </div>
-                            ))
-                          ) : (
-                              <p className="text-sm text-muted-foreground">Nenhum comentário para exibir.</p>
-                          )}
-                        </div>
+                              ))
+                            ) : (
+                                <p className="text-sm text-center text-muted-foreground">Nenhum comentário para exibir ou comentários desativados.</p>
+                            )}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   </TableCell>

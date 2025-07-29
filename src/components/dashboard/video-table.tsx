@@ -80,7 +80,9 @@ export function VideoTable({ videos, onAnalyze }: VideoTableProps) {
                   />
                 </Link>
                 <div className="space-y-1">
-                  <p className="font-medium leading-tight">{video.title}</p>
+                   <Link href={video.videoUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                    <p className="font-medium leading-tight">{video.title}</p>
+                   </Link>
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                        <Clapperboard className="h-3 w-3" />

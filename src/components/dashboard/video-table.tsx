@@ -17,6 +17,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+  } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import type { Video } from "@/lib/data";
 import {
@@ -74,8 +79,30 @@ const Comment = ({ text }: { text: string }) => {
         )}
       </div>
     );
-  };
+};
   
+const TruncatedText = ({ text, maxLength, asLink, href }: { text: string; maxLength: number, asLink?: boolean, href?: string }) => {
+    if (text.length <= maxLength) {
+        return asLink ? <Link href={href!} target="_blank" rel="noopener noreferrer" className="hover:underline"><p className="font-medium leading-tight">{text}</p></Link> : <span className="truncate">{text}</span>;
+    }
+
+    const truncatedText = `${text.substring(0, maxLength)}...`;
+
+    const content = asLink ? 
+        <Link href={href!} target="_blank" rel="noopener noreferrer" className="hover:underline"><p className="font-medium leading-tight">{truncatedText}</p></Link> : 
+        <span className="truncate">{truncatedText}</span>
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                {content}
+            </TooltipTrigger>
+            <TooltipContent>
+                <p className="max-w-xs">{text}</p>
+            </TooltipContent>
+        </Tooltip>
+    );
+};
 
 export function VideoTable({
   videos,
@@ -172,36 +199,29 @@ export function VideoTable({
                       />
                     </Link>
                     <div className="space-y-1.5">
-                       <Link
-                        href={video.videoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:underline"
-                      >
-                        <p className="font-medium leading-tight">{video.title}</p>
-                      </Link>
-                      <div className="space-y-1 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1.5">
-                          <Clapperboard className="h-4 w-4 text-gray-500" />
-                          <span>{video.category}</span>
+                        <TruncatedText text={video.title} maxLength={60} asLink href={video.videoUrl} />
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1.5">
+                                <Clapperboard className="h-4 w-4 text-gray-500" />
+                                <span>{video.category}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <Clock className="h-4 w-4 text-gray-500" />
+                                <span>{video.duration}</span>
+                            </div>
+                            {video.tags && video.tags.length > 0 && (
+                            <div className="flex items-center gap-1.5">
+                                <Tag className="h-4 w-4 text-gray-500" />
+                                <TruncatedText text={video.tags.join(', ')} maxLength={50} />
+                            </div>
+                            )}
+                            {video.isShort && (
+                            <div className="flex items-center gap-1.5">
+                                <ShortsIcon />
+                                <span className="font-semibold">Shorts</span>
+                            </div>
+                            )}
                         </div>
-                        <div className="flex items-center gap-1.5">
-                            <Clock className="h-4 w-4 text-gray-500" />
-                            <span>{video.duration}</span>
-                        </div>
-                        {video.tags && video.tags.length > 0 && (
-                           <div className="flex items-center gap-1.5">
-                             <Tag className="h-4 w-4 text-gray-500" />
-                             <span className="truncate">{video.tags.slice(0, 5).join(', ')}</span>
-                           </div>
-                        )}
-                        {video.isShort && (
-                          <div className="flex items-center gap-1.5">
-                            <ShortsIcon />
-                            <span className="font-semibold">Shorts</span>
-                          </div>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </TableCell>

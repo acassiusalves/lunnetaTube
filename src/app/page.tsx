@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -13,6 +14,7 @@ import { fetchTopComments } from "@/ai/flows/fetch-comments";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 type AnalysisType = "content";
 const API_KEY_STORAGE_ITEM = "youtube_api_key";
@@ -196,6 +198,7 @@ export default function DashboardPage() {
         )}
 
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+         <TooltipProvider>
           {isLoading ? (
              <div className="p-4">
                 <div className="space-y-3">
@@ -216,6 +219,7 @@ export default function DashboardPage() {
               onSort={handleSort}
             />
           )}
+          </TooltipProvider>
         </div>
         {displayedVideos.length > 0 && canLoadMore && (
           <div className="mt-6 flex justify-center">

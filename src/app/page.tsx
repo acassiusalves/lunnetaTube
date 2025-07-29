@@ -131,7 +131,7 @@ export default function DashboardPage() {
   const canLoadMore = !!nextPageToken;
 
   return (
-    <div className="container mx-auto max-w-7xl">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="space-y-4">
         <header>
           <h1 className="text-3xl font-bold tracking-tight">Analisador de Mercado</h1>

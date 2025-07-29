@@ -77,7 +77,7 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
   
   return (
     <Tabs defaultValue="keyword" onValueChange={setActiveTab}>
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
         <TabsTrigger value="keyword">Pesquisar por Palavra-chave</TabsTrigger>
         <TabsTrigger value="trending">Vídeos em Alta</TabsTrigger>
       </TabsList>
@@ -91,8 +91,8 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleFormSubmit} className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div className="space-y-2 lg:col-span-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="keyword">Palavra-chave</Label>
                   <Input ref={keywordRef} id="keyword" placeholder="ex: 'ferramentas de gestão de produtos'" />
                 </div>
@@ -146,7 +146,7 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleFormSubmit} className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                  <div className="space-y-2">
                   <Label htmlFor="category">Categoria</Label>
                   <Select onValueChange={(val) => categoryTrendingRef.current = val}>

@@ -15,11 +15,14 @@ import { youtube } from 'googleapis/build/src/apis/youtube';
 const FetchCommentsInputSchema = z.object({
   apiKey: z.string().describe("The YouTube Data API v3 key."),
   videoId: z.string().describe("The ID of the YouTube video."),
+  pageToken: z.string().optional().describe("The token for the next page of results."),
+  maxResults: z.number().optional().describe("The maximum number of comments to return."),
 });
 export type FetchCommentsInput = z.infer<typeof FetchCommentsInputSchema>;
 
 const FetchCommentsOutputSchema = z.object({
   comments: z.any().optional().describe("An array of comment threads."),
+  nextPageToken: z.string().optional().describe("Token for the next page."),
   error: z.string().optional().describe("An error message if the fetch fails.")
 });
 export type FetchCommentsOutput = z.infer<typeof FetchCommentsOutputSchema>;
@@ -45,7 +48,8 @@ const fetchTopCommentsFlow = ai.defineFlow(
         part: ['snippet'],
         videoId: input.videoId,
         order: 'relevance',
-        maxResults: 20,
+        maxResults: input.maxResults || 20,
+        pageToken: input.pageToken,
         textFormat: 'plainText',
       });
 
@@ -58,7 +62,10 @@ const fetchTopCommentsFlow = ai.defineFlow(
         };
       });
 
-      return { comments: comments || [] };
+      return { 
+        comments: comments || [],
+        nextPageToken: response.data.nextPageToken || undefined 
+      };
 
     } catch (e: any) {
         console.error(e);

@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 
-type AnalysisType = "content" | "comments";
+type AnalysisType = "content";
 const API_KEY_STORAGE_ITEM = "youtube_api_key";
 
 export default function DashboardPage() {
@@ -129,7 +129,7 @@ export default function DashboardPage() {
     }
 
     try {
-      const result = await fetchTopComments({ videoId, apiKey });
+      const result = await fetchTopComments({ videoId, apiKey, maxResults: 20 });
       if (result.error) {
         toast({
           title: "Erro ao Buscar Comentários",

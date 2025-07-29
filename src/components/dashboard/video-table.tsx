@@ -42,7 +42,7 @@ export interface SortConfig {
 }
 interface VideoTableProps {
   videos: Video[];
-  onAnalyze: (video: Video, type: "content" | "comments") => void;
+  onAnalyze: (video: Video, type: "content") => void;
   onFetchComments: (videoId: string) => void;
   isLoadingComments: boolean;
   sortConfig: SortConfig;
@@ -240,11 +240,11 @@ export function VideoTable({
                         <Sparkles className="mr-2 h-4 w-4" />
                         Analisar Conteúdo
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => onAnalyze(video, "comments")}
-                      >
-                        <MessagesSquare className="mr-2 h-4 w-4" />
-                        Analisar Comentários
+                      <DropdownMenuItem asChild>
+                         <Link href={`/analyze/${video.id}`}>
+                            <MessagesSquare className="mr-2 h-4 w-4" />
+                            Analisar Comentários
+                        </Link>
                       </DropdownMenuItem>
                       <Link
                         href={video.videoUrl}

@@ -10,7 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { google } from 'googleapis';
+import { youtube } from 'googleapis/build/src/apis/youtube';
 
 const YoutubeSearchInputSchema = z.object({
   apiKey: z.string().describe("The YouTube Data API v3 key."),
@@ -42,7 +42,7 @@ const searchYoutubeVideosFlow = ai.defineFlow(
     outputSchema: YoutubeSearchOutputSchema,
   },
   async (input) => {
-    const youtube = google.youtube({
+    const youtubeApi = youtube({
       version: 'v3',
       auth: input.apiKey,
     });
@@ -52,7 +52,7 @@ const searchYoutubeVideosFlow = ai.defineFlow(
         let nextPageToken: string | undefined | null;
 
         if (input.type === 'keyword') {
-            const searchResponse = await youtube.search.list({
+            const searchResponse = await youtubeApi.search.list({
                 part: ['snippet'],
                 q: input.keyword,
                 type: 'video',
@@ -66,7 +66,7 @@ const searchYoutubeVideosFlow = ai.defineFlow(
             nextPageToken = searchResponse.data.nextPageToken;
 
         } else { // trending
-            const trendingResponse = await youtube.videos.list({
+            const trendingResponse = await youtubeApi.videos.list({
                 part: ['snippet', 'contentDetails', 'statistics'],
                 chart: 'mostPopular',
                 regionCode: input.country,
@@ -95,7 +95,7 @@ const searchYoutubeVideosFlow = ai.defineFlow(
         }
 
         // Get video details for the IDs found
-        const videoDetailsResponse = await youtube.videos.list({
+        const videoDetailsResponse = await youtubeApi.videos.list({
             part: ['snippet', 'contentDetails', 'statistics'],
             id: videoIds,
             maxResults: 50,

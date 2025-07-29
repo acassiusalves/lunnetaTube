@@ -120,7 +120,7 @@ export function VideoTable({
             <TableHead className="w-[450px] min-w-[450px]">Título</TableHead>
             <SortableHeader columnKey="views">Visualizações</SortableHeader>
             <SortableHeader columnKey="likes">Likes</SortableHeader>
-            <TableHead>Comentários</TableHead>
+            <SortableHeader columnKey="comments">Comentários</SortableHeader>
             <SortableHeader columnKey="publishedAt">Data</SortableHeader>
             <TableHead className="w-[100px] text-center">Ações</TableHead>
           </TableRow>

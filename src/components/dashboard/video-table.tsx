@@ -17,7 +17,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import type { Video } from "@/lib/data";
 import {
   ArrowDown,
@@ -102,13 +101,30 @@ export function VideoTable({
 
   const ShortsIcon = () => (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
+      width="1em"
+      height="1em"
       viewBox="0 0 24 24"
-      fill="currentColor"
-      className="h-3.5 w-3.5 text-red-600"
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-3.5 w-3.5"
+      aria-hidden="true"
     >
-      <path d="M17.53,2.47a2.5,2.5,0,0,0-3.53,0L8.8,7.66a2.5,2.5,0,0,0,0,3.53l5.2,5.2a2.5,2.5,0,0,0,3.53,0l5.2-5.2a2.5,2.5,0,0,0,0-3.53ZM8.8,12.89,6.47,15.22a2.5,2.5,0,0,0,0,3.53l5.2,5.2a2.5,2.5,0,0,0,3.53,0L17.53,21.6a2.5,2.5,0,0,0,0-3.53Z" />
-      <path d="M7.66,8.8,2.47,14a2.5,2.5,0,0,0,0,3.53L4.8,19.86A2.5,2.5,0,0,0,8.33,18.7l-0.7-0.7a2.51,2.51,0,0,0-3.54,0l-1.2,1.2a.51.51,0,0,1-.71,0l-1-1a.51.51,0,0,1,0-.71l5.2-5.2a.51.51,0,0,1,.71,0l1,1a.51.51,0,0,1,0,.71l-1.2,1.2a2.51,2.51,0,0,0,0,3.54l0.7.7A2.5,2.5,0,0,0,11.2,15.22l5.2-5.2a.5.5,0,0,1,.71,0l1,1a.5.5,0,0,1,0,.71l-1.2,1.2a2.51,2.51,0,0,0,0,3.54l0.7,0.7a2.5,2.5,0,0,0,3.53-1.16l2.33-2.33a2.5,2.5,0,0,0,0-3.53Z" />
+      <defs>
+        <linearGradient id="shorts-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style={{ stopColor: "#FF0000", stopOpacity: 1 }} />
+          <stop
+            offset="100%"
+            style={{ stopColor: "#FF4D4D", stopOpacity: 1 }}
+          />
+        </linearGradient>
+      </defs>
+      <path
+        fill="url(#shorts-gradient)"
+        d="M17.52 2.47a2.5 2.5 0 0 0-3.53 0L8.8 7.66a2.5 2.5 0 0 0 0 3.53l5.2 5.2a2.5 2.5 0 0 0 3.53 0l5.2-5.2a2.5 2.5 0 0 0 0-3.53zM6.47 15.22l5.2 5.2a2.5 2.5 0 0 0 3.53 0L17.52 18a2.5 2.5 0 0 0 0-3.53L12.33 9.3a.5.5 0 0 1 0-.7l1-1a.5.5 0 0 1 .7 0l5.2 5.2a.5.5 0 0 1 0 .7l-1 1a.5.5 0 0 1-.7 0L12.33 11a2.5 2.5 0 0 0-3.53 0l-5.2 5.2a2.5 2.5 0 0 0 0 3.53l2.33 2.33a2.5 2.5 0 0 0 3.53 0l.71-.71a2.5 2.5 0 0 0-3.54-3.54z"
+      ></path>
+      <path
+        fill="#FFFFFF"
+        d="m10.44 14.59l3.56-2.06a.5.5 0 0 0 0-.86l-3.56-2.06A.5.5 0 0 0 9.75 10v4.1a.5.5 0 0 0 .69.49z"
+      ></path>
     </svg>
   );
 
@@ -155,15 +171,15 @@ export function VideoTable({
                       </Link>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
-                          <Clapperboard className="h-3 w-3" />
+                          <Clapperboard className="h-3.5 w-3.5 text-sky-500" fill="currentColor" />
                           <span>{video.category}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <UserSquare className="h-3 w-3" />
+                          <UserSquare className="h-3.5 w-3.5 text-orange-500" fill="currentColor" />
                           <span>{video.channel}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
+                          <Clock className="h-3.5 w-3.5 text-indigo-500" />
                           <span>{video.duration}</span>
                         </div>
                         {video.isShort && (
@@ -253,8 +269,7 @@ export function VideoTable({
                             video.commentsData.map((comment, index) => (
                               <div key={index} className="flex items-start gap-3 text-sm">
                                 <Avatar className="h-8 w-8 border">
-                                  <AvatarImage src={comment.authorImageUrl} alt={comment.author} data-ai-hint="user avatar" />
-                                  <AvatarFallback>{comment.author.charAt(0)}</AvatarFallback>
+                                  <img src={comment.authorImageUrl} alt={comment.author} data-ai-hint="user avatar" className="h-full w-full rounded-full object-cover" />
                                 </Avatar>
                                 <div>
                                   <p className="font-semibold">{comment.author}</p>

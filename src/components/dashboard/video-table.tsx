@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from "react";
@@ -34,8 +35,6 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Avatar } from "../ui/avatar";
-import { Skeleton } from "../ui/skeleton";
-
 
 export interface SortConfig {
   key: keyof Video | null;
@@ -49,6 +48,33 @@ interface VideoTableProps {
   sortConfig: SortConfig;
   onSort: (key: keyof Video) => void;
 }
+
+const Comment = ({ text }: { text: string }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const maxLength = 400;
+    const isLongComment = text.length > maxLength;
+  
+    const toggleExpanded = () => setIsExpanded(!isExpanded);
+  
+    const displayedText = isLongComment && !isExpanded
+      ? `${text.substring(0, maxLength)}...`
+      : text;
+  
+    return (
+      <div className="text-muted-foreground whitespace-pre-wrap break-words max-w-full">
+        <p>{displayedText}</p>
+        {isLongComment && (
+          <button
+            onClick={toggleExpanded}
+            className="text-primary text-xs font-semibold hover:underline mt-1"
+          >
+            {isExpanded ? "Ver menos" : "Ver mais"}
+          </button>
+        )}
+      </div>
+    );
+  };
+  
 
 export function VideoTable({
   videos,
@@ -254,9 +280,9 @@ export function VideoTable({
                                   <Avatar className="h-8 w-8 border">
                                     <img src={comment.authorImageUrl} alt={comment.author} data-ai-hint="user avatar" className="h-full w-full rounded-full object-cover" />
                                   </Avatar>
-                                  <div>
+                                  <div className="flex-1">
                                     <p className="font-semibold">{comment.author}</p>
-                                    <p className="text-muted-foreground">{comment.text}</p>
+                                    <Comment text={comment.text} />
                                   </div>
                                 </div>
                               ))

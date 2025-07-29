@@ -1,3 +1,4 @@
+
 export const countries = [
   { value: 'br', label: 'Brasil' },
   { value: 'us', label: 'Estados Unidos' },
@@ -76,6 +77,8 @@ const mockApiVideos = [
         { author: 'Ana B.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Excelente guia! Muito claro e direto ao ponto.'},
         { author: 'Carlos S.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Isso me ajudou a estruturar todo o meu processo. Obrigado!'},
         { author: 'Mariana L.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Gostaria de ver mais sobre a priorização de features.'},
+        { author: 'Rafael G.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Uau, conteúdo de altíssima qualidade. Parabéns!'},
+        { author: 'Beatriz M.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Qual ferramenta de roadmap você recomenda?'},
     ]
   },
   {
@@ -102,6 +105,7 @@ const mockApiVideos = [
     commentsData: [
         { author: 'Pedro M.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Vídeo inspirador! Mostra que é possível começar pequeno.'},
         { author: 'Julia A.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Quais ferramentas você recomenda para o MVP?'},
+        { author: 'Fernando P.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'A parte sobre pricing foi especialmente útil para mim.'},
     ]
   },
   {
@@ -151,7 +155,10 @@ const mockApiVideos = [
     contentDetails: {
       duration: 'PT18M50S',
     },
-    commentsData: []
+    commentsData: [
+        { author: 'Marcos V.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'A estratégia de conteúdo local funcionou muito bem para mim.'},
+        { author: 'Livia S.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Simples e acionável. Vou testar o marketing de parceria.'},
+    ]
   },
   {
     id: 'WcI_1i8hr5U',
@@ -176,6 +183,8 @@ const mockApiVideos = [
     },
     commentsData: [
         { author: 'Ricardo T.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Explicação muito técnica, mas valeu a pena.'},
+        { author: 'Sofia K.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Poderia fazer um vídeo sobre redes neurais convolucionais?'},
+        { author: 'Daniel H.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'A melhor explicação sobre o tema que já vi no YouTube.'},
     ]
   },
   {
@@ -202,6 +211,7 @@ const mockApiVideos = [
     commentsData: [
         { author: 'Beatriz R.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Mudou minha perspectiva sobre dinheiro.'},
         { author: 'André F.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Preciso começar a investir agora mesmo.'},
+        { author: 'Clara N.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Um short com mais valor que muitos cursos pagos por aí!'},
     ]
   },
 ];

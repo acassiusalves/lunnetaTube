@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -41,7 +42,16 @@ export default function SettingsPage() {
               <CardTitle>API do YouTube</CardTitle>
               <CardDescription>
                 Insira sua chave de API do YouTube para buscar vídeos e dados. Você
-                pode obter uma chave no Console de Desenvolvedores do Google.
+                pode obter uma chave no{" "}
+                <Link
+                  href="https://console.cloud.google.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Google Cloud Console
+                </Link>
+                .
               </CardDescription>
             </CardHeader>
             <CardContent>

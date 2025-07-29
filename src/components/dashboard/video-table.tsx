@@ -69,7 +69,7 @@ export function VideoTable({ videos, onAnalyze }: VideoTableProps) {
           <TableRow key={video.id}>
             <TableCell>
               <div className="flex items-start gap-4">
-                <Link href={video.videoUrl} target="_blank">
+                <Link href={video.videoUrl} target="_blank" rel="noopener noreferrer">
                   <Image
                     src={video.thumbnailUrl}
                     alt={video.title}
@@ -130,7 +130,7 @@ export function VideoTable({ videos, onAnalyze }: VideoTableProps) {
                       <MessagesSquare className="mr-2 h-4 w-4" />
                       Analisar Comentários
                    </DropdownMenuItem>
-                  <Link href={video.videoUrl} target="_blank">
+                  <Link href={video.videoUrl} target="_blank" rel="noopener noreferrer">
                     <DropdownMenuItem>
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Abrir no YouTube

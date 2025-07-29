@@ -100,6 +100,18 @@ export function VideoTable({
     );
   };
 
+  const ShortsIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className="h-3.5 w-3.5 text-red-600"
+    >
+      <path d="M17.53,2.47a2.5,2.5,0,0,0-3.53,0L8.8,7.66a2.5,2.5,0,0,0,0,3.53l5.2,5.2a2.5,2.5,0,0,0,3.53,0l5.2-5.2a2.5,2.5,0,0,0,0-3.53ZM8.8,12.89,6.47,15.22a2.5,2.5,0,0,0,0,3.53l5.2,5.2a2.5,2.5,0,0,0,3.53,0L17.53,21.6a2.5,2.5,0,0,0,0-3.53Z" />
+      <path d="M7.66,8.8,2.47,14a2.5,2.5,0,0,0,0,3.53L4.8,19.86A2.5,2.5,0,0,0,8.33,18.7l-0.7-0.7a2.51,2.51,0,0,0-3.54,0l-1.2,1.2a.51.51,0,0,1-.71,0l-1-1a.51.51,0,0,1,0-.71l5.2-5.2a.51.51,0,0,1,.71,0l1,1a.51.51,0,0,1,0,.71l-1.2,1.2a2.51,2.51,0,0,0,0,3.54l0.7.7A2.5,2.5,0,0,0,11.2,15.22l5.2-5.2a.5.5,0,0,1,.71,0l1,1a.5.5,0,0,1,0,.71l-1.2,1.2a2.51,2.51,0,0,0,0,3.54l0.7,0.7a2.5,2.5,0,0,0,3.53-1.16l2.33-2.33a2.5,2.5,0,0,0,0-3.53Z" />
+    </svg>
+  );
+
   return (
     <div className="w-full overflow-x-auto">
       <Table className="min-w-[1000px]">
@@ -156,8 +168,8 @@ export function VideoTable({
                         </div>
                         {video.isShort && (
                           <div className="flex items-center gap-1">
-                            <PlaySquare className="h-3.5 w-3.5 text-red-500" />
-                            <span className="font-semibold text-red-500">
+                            <ShortsIcon />
+                            <span className="font-semibold text-red-600">
                               Shorts
                             </span>
                           </div>

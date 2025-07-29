@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   Table,
@@ -122,7 +121,7 @@ export function VideoTable({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Image
+                    <img
                       src={video.snippet.thumbnails.high.url}
                       alt={video.title}
                       width={120}

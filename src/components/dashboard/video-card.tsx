@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   Calendar,
   Clock,
@@ -39,8 +38,8 @@ export function VideoCard({ video, onAnalyze }: VideoCardProps) {
     <Card className="flex h-full flex-col overflow-hidden transition-shadow duration-300 hover:shadow-lg">
       <CardHeader className="p-0">
         <a href={video.videoUrl} target="_blank" rel="noopener noreferrer" className="relative block">
-          <Image
-            src={video.thumbnailUrl}
+          <img
+            src={video.snippet.thumbnails.high.url}
             alt={video.title}
             width={400}
             height={225}

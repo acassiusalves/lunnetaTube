@@ -29,14 +29,21 @@ import {
   MessagesSquare,
   Sparkles,
   UserSquare,
+  ArrowUpDown,
 } from "lucide-react";
 
+export interface SortConfig {
+    key: keyof Video | null;
+    direction: 'ascending' | 'descending';
+}
 interface VideoTableProps {
   videos: Video[];
   onAnalyze: (video: Video, type: "content" | "comments") => void;
+  sortConfig: SortConfig;
+  onSort: (key: keyof Video) => void;
 }
 
-export function VideoTable({ videos, onAnalyze }: VideoTableProps) {
+export function VideoTable({ videos, onAnalyze, sortConfig, onSort }: VideoTableProps) {
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat("pt-BR", {
       notation: "standard",
@@ -48,20 +55,35 @@ export function VideoTable({ videos, onAnalyze }: VideoTableProps) {
     return `${day}/${month}/${year}`;
   };
 
+  const SortableHeader = ({
+    columnKey,
+    children,
+  }: {
+    columnKey: keyof Video;
+    children: React.ReactNode;
+  }) => {
+    const isSorted = sortConfig.key === columnKey;
+    const Icon = isSorted ? (sortConfig.direction === 'ascending' ? ArrowUp : ArrowDown) : ArrowUpDown;
+    
+    return (
+      <TableHead className="text-right cursor-pointer" onClick={() => onSort(columnKey)}>
+        <div className="flex items-center justify-end gap-1">
+          {children} <Icon className="h-3 w-3" />
+        </div>
+      </TableHead>
+    );
+  };
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead className="w-[450px]">Título</TableHead>
-          <TableHead className="text-right">
-            <div className="flex items-center justify-end gap-1">
-              Visualizações <ArrowDown className="h-3 w-3" />
-            </div>
-          </TableHead>
-          <TableHead className="text-right">Likes</TableHead>
-          <TableHead className="text-right">Comentários</TableHead>
-          <TableHead className="text-right">Duração</TableHead>
-          <TableHead className="text-right">Data</TableHead>
+          <SortableHeader columnKey="views">Visualizações</SortableHeader>
+          <SortableHeader columnKey="likes">Likes</SortableHeader>
+          <SortableHeader columnKey="comments">Comentários</SortableHeader>
+          <SortableHeader columnKey="duration">Duração</SortableHeader>
+          <SortableHeader columnKey="publishedAt">Data</SortableHeader>
           <TableHead className="w-[100px] text-center">Ações</TableHead>
         </TableRow>
       </TableHeader>

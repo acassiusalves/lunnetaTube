@@ -42,92 +42,103 @@ export interface Video {
   dataAiHint: string;
 }
 
+// Real YouTube Video IDs
+const mockVideoIds = [
+  'eW7T3w_3sZg', // Product Management Guide
+  'u6gSSpfOKa4', // How to Start a SaaS Business
+  '7Tq8-2yzt4E', // UX Design Principles for Beginners
+  'a25J2r9T6oM', // Top 5 Marketing Strategies
+  'v4c4L-EvjN8', // Deep Dive into Machine Learning
+  '8B5k_2xK3iU', // Mastering Financial Freedom
+];
+
+
 const mockVideos: Video[] = [
   {
-    id: '1',
+    id: 'eW7T3w_3sZg',
     title: 'O Guia Definitivo para Gestão de Produtos',
-    thumbnailUrl: 'https://placehold.co/120x68.png',
+    thumbnailUrl: `https://i.ytimg.com/vi/eW7T3w_3sZg/hqdefault.jpg`,
     views: 1205432,
     likes: 89342,
     comments: 5432,
     duration: '15:23',
     publishedAt: '2023-10-26',
-    videoUrl: '#',
+    videoUrl: 'https://www.youtube.com/watch?v=eW7T3w_3sZg',
     channel: 'ProdMasters',
     category: 'Educação',
     isShort: false,
     dataAiHint: 'reunião de negócios'
   },
   {
-    id: '2',
+    id: 'u6gSSpfOKa4',
     title: 'Como Iniciar um Negócio SaaS em 2024',
-    thumbnailUrl: 'https://placehold.co/120x68.png',
+    thumbnailUrl: `https://i.ytimg.com/vi/u6gSSpfOKa4/hqdefault.jpg`,
     views: 876345,
     likes: 65432,
     comments: 4321,
     duration: '25:10',
     publishedAt: '2023-11-15',
-    videoUrl: '#',
+    videoUrl: 'https://www.youtube.com/watch?v=u6gSSpfOKa4',
     channel: 'SaaSWiz',
     category: 'Ciência e Tecnologia',
     isShort: false,
     dataAiHint: 'escritório de startup'
   },
   {
-    id: '3',
+    id: '7Tq8-2yzt4E',
     title: 'Princípios de Design de UX para Iniciantes',
-    thumbnailUrl: 'https://placehold.co/120x68.png',
+    thumbnailUrl: `https://i.ytimg.com/vi/7Tq8-2yzt4E/hqdefault.jpg`,
     views: 2345678,
     likes: 123456,
     comments: 8765,
     duration: '00:45',
     publishedAt: '2023-09-01',
-    videoUrl: '#',
+    videoUrl: 'https://www.youtube.com/watch?v=7Tq8-2yzt4E',
     channel: 'Design Fácil',
     category: 'Como Fazer e Estilo',
     isShort: true,
     dataAiHint: 'wireframe de design'
   },
   {
-    id: '4',
+    id: 'a25J2r9T6oM',
     title: 'Top 5 Estratégias de Marketing para Pequenas Empresas',
-    thumbnailUrl: 'https://placehold.co/120x68.png',
+    thumbnailUrl: `https://i.ytimg.com/vi/a25J2r9T6oM/hqdefault.jpg`,
     views: 543210,
     likes: 43210,
     comments: 3210,
     duration: '18:50',
     publishedAt: '2024-01-05',
-    videoUrl: '#',
+    videoUrl: 'https://www.youtube.com/watch?v=a25J2r9T6oM',
     channel: 'MarketingPRO',
     category: 'Educação',
     isShort: false,
     dataAiHint: 'estratégia de marketing'
   },
   {
-    id: '5',
+    id: 'v4c4L-EvjN8',
     title: 'Um Mergulho Profundo em Modelos de Machine Learning',
-    thumbnailUrl: 'https://placehold.co/120x68.png',
+    thumbnailUrl: `https://i.ytimg.com/vi/v4c4L-EvjN8/hqdefault.jpg`,
     views: 987654,
     likes: 76543,
     comments: 6543,
     duration: '45:30',
     publishedAt: '2023-12-20',
-    videoUrl: '#',
+    videoUrl: 'https://www.youtube.com/watch?v=v4c4L-EvjN8',
     channel: 'AI Explorers',
     category: 'Ciência e Tecnologia',
     isShort: false,
     dataAiHint: 'inteligência artificial'
   },
   {
-    id: '6',
+    id: '8B5k_2xK3iU',
     title: 'Dominando a Liberdade Financeira: Um Guia Passo a Passo',
-    thumbnailUrl: 'https://placehold.co/120x68.png',
+    thumbnailUrl: `https://i.ytimg.com/vi/8B5k_2xK3iU/hqdefault.jpg`,
     views: 3456789,
     likes: 234567,
     comments: 12345,
     duration: '00:59',
     publishedAt: '2023-08-10',
-    videoUrl: '#',
+    videoUrl: 'https://www.youtube.com/watch?v=8B5k_2xK3iU',
     channel: 'Dinheiro+',
     category: 'Finanças',
     isShort: true,
@@ -137,8 +148,5 @@ const mockVideos: Video[] = [
 
 export const getMockVideos = (): Video[] => {
   // In a real app, this would fetch from an API
-  return mockVideos.map(video => ({
-    ...video,
-    thumbnailUrl: `https://i.ytimg.com/vi/${Math.random().toString(36).substring(7)}/hqdefault.jpg`
-  }));
+  return mockVideos;
 };

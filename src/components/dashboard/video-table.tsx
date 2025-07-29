@@ -26,7 +26,6 @@ import {
   ExternalLink,
   MoreVertical,
   PlaySquare,
-  Sparkles,
   MessagesSquare
 } from "lucide-react";
 
@@ -70,7 +69,8 @@ export function VideoTable({ videos, onAnalyze }: VideoTableProps) {
             <TableCell>
               <div className="flex items-start gap-4">
                 <Link href={video.videoUrl} target="_blank" rel="noopener noreferrer">
-                  <Image
+                  {/* Usando a tag <img> padrão para garantir que a imagem apareça sem precisar reiniciar o servidor */}
+                  <img
                     src={video.thumbnailUrl}
                     alt={video.title}
                     width={120}

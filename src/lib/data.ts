@@ -208,18 +208,18 @@ const formatDuration = (duration: string): string => {
 };
 
 // Mapear os dados da API simulada para nossa interface Video
-const mapApiToVideo = (apiVideo: any): Video => {
+const mapApiToVideo = (apiVideo: any, index: number): Video => {
   const duration = formatDuration(apiVideo.contentDetails.duration);
   const totalSeconds = (parseInt(apiVideo.contentDetails.duration.match(/(\d+)S/)?.[1] || '0', 10)) + 
                      (parseInt(apiVideo.contentDetails.duration.match(/(\d+)M/)?.[1] || '0', 10) * 60) +
                      (parseInt(apiVideo.contentDetails.duration.match(/(\d+)H/)?.[1] || '0', 10) * 3600);
   return {
-    id: apiVideo.id,
-    title: apiVideo.snippet.title,
+    id: `${apiVideo.id}-${index}`, // Make id unique for generated data
+    title: `${apiVideo.snippet.title} #${index + 1}`,
     thumbnailUrl: apiVideo.snippet.thumbnails.high.url,
-    views: parseInt(apiVideo.statistics.viewCount, 10),
-    likes: parseInt(apiVideo.statistics.likeCount, 10),
-    comments: parseInt(apiVideo.statistics.commentCount, 10),
+    views: parseInt(apiVideo.statistics.viewCount, 10) - (index * 1000),
+    likes: parseInt(apiVideo.statistics.likeCount, 10) - (index * 100),
+    comments: parseInt(apiVideo.statistics.commentCount, 10) - (index * 10),
     duration: duration,
     publishedAt: apiVideo.snippet.publishedAt.split('T')[0],
     videoUrl: `https://www.youtube.com/watch?v=${apiVideo.id}`,
@@ -230,7 +230,14 @@ const mapApiToVideo = (apiVideo: any): Video => {
   };
 };
 
-export const getMockVideos = (): Video[] => {
-  // Mapeia os dados "brutos" da API para a nossa interface Video
-  return mockApiVideos.map(mapApiToVideo);
+export const getMockVideos = (count: number = mockApiVideos.length): Video[] => {
+  const generatedVideos: Video[] = [];
+  while (generatedVideos.length < count) {
+    mockApiVideos.forEach((video) => {
+      if (generatedVideos.length < count) {
+        generatedVideos.push(mapApiToVideo(video, generatedVideos.length));
+      }
+    });
+  }
+  return generatedVideos;
 };

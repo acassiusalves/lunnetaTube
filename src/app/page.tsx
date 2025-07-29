@@ -2,17 +2,23 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { VideoSearchTabs } from "@/components/dashboard/video-search-tabs";
+import { VideoSearchTabs, type SearchParams } from "@/components/dashboard/video-search-tabs";
 import { AnalysisDialog } from "@/components/dashboard/analysis-dialog";
-import { getMockVideos, type Video } from "@/lib/data";
+import { Video, mapApiToVideo } from "@/lib/data";
 import { VideoTable, type SortConfig } from "@/components/dashboard/video-table";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { searchYoutubeVideos } from "@/ai/flows/youtube-search";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Terminal } from "lucide-react";
 
 type AnalysisType = "content" | "comments";
 const VIDEOS_PER_PAGE = 50;
+const API_KEY_STORAGE_ITEM = "youtube_api_key";
 
 export default function DashboardPage() {
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
@@ -21,32 +27,72 @@ export default function DashboardPage() {
   
   const [allVideos, setAllVideos] = useState<Video[]>([]);
   const [displayedVideos, setDisplayedVideos] = useState<Video[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [nextPageToken, setNextPageToken] = useState<string | undefined>(undefined);
+  const [currentSearch, setCurrentSearch] = useState<SearchParams | null>(null);
+  
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Memoize all videos to avoid re-fetching unless necessary
-  const allMockVideos = useMemo(() => getMockVideos(100), []);
-
-  const handleSearch = () => {
+  const handleSearch = async (params: SearchParams) => {
     setIsLoading(true);
     setDisplayedVideos([]);
-    setTimeout(() => {
-      setAllVideos(allMockVideos);
-      setDisplayedVideos(allMockVideos.slice(0, VIDEOS_PER_PAGE));
-      setCurrentPage(1);
+    setAllVideos([]);
+    setError(null);
+    setCurrentSearch(params);
+    
+    const apiKey = localStorage.getItem(API_KEY_STORAGE_ITEM);
+    if (!apiKey) {
+      setError("Chave de API do YouTube não encontrada. Por favor, adicione-a na página de Configurações.");
       setIsLoading(false);
-    }, 1500);
+      return;
+    }
+
+    try {
+      const result = await searchYoutubeVideos({ ...params, apiKey });
+      if (result.error) {
+        setError(result.error);
+        setAllVideos([]);
+        setDisplayedVideos([]);
+      } else {
+        const fetchedVideos = result.videos?.map(mapApiToVideo) || [];
+        setAllVideos(fetchedVideos);
+        setDisplayedVideos(fetchedVideos);
+        setNextPageToken(result.nextPageToken);
+      }
+    } catch (e: any) {
+      setError(e.message || "Ocorreu um erro ao buscar os vídeos.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleLoadMore = () => {
+  const handleLoadMore = async () => {
+    if (!nextPageToken || !currentSearch) return;
+
     setIsLoadingMore(true);
-    setTimeout(() => {
-      const nextPage = currentPage + 1;
-      const newVideos = allVideos.slice(0, nextPage * VIDEOS_PER_PAGE);
-      setDisplayedVideos(newVideos);
-      setCurrentPage(nextPage);
+    setError(null);
+    const apiKey = localStorage.getItem(API_KEY_STORAGE_ITEM);
+     if (!apiKey) {
+      setError("Chave de API do YouTube não encontrada. Por favor, adicione-a na página de Configurações.");
       setIsLoadingMore(false);
-    }, 1000);
+      return;
+    }
+
+    try {
+      const result = await searchYoutubeVideos({ ...currentSearch, apiKey, pageToken: nextPageToken });
+        if (result.error) {
+        setError(result.error);
+      } else {
+        const newVideos = result.videos?.map(mapApiToVideo) || [];
+        setAllVideos(prev => [...prev, ...newVideos]);
+        setDisplayedVideos(prev => [...prev, ...newVideos]);
+        setNextPageToken(result.nextPageToken);
+      }
+    } catch (e: any) {
+      setError(e.message || "Ocorreu um erro ao buscar os vídeos.");
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   const handleOpenDialog = (video: Video, type: AnalysisType) => {
@@ -82,7 +128,7 @@ export default function DashboardPage() {
     return sortableVideos;
   }, [displayedVideos, sortConfig]);
 
-  const canLoadMore = displayedVideos.length < allVideos.length;
+  const canLoadMore = !!nextPageToken;
 
   return (
     <div className="container mx-auto max-w-7xl">
@@ -95,6 +141,14 @@ export default function DashboardPage() {
         </header>
 
         <VideoSearchTabs onSearch={handleSearch} isLoading={isLoading} />
+
+        {error && (
+            <Alert variant="destructive">
+                <Terminal className="h-4 w-4" />
+                <AlertTitle>Erro na Busca</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
+        )}
 
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
           {isLoading ? (
@@ -126,7 +180,7 @@ export default function DashboardPage() {
               {isLoadingMore ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              Carregar Mais 50
+              Carregar Mais
             </Button>
           </div>
         )}

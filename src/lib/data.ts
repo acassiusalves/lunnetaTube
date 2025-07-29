@@ -29,7 +29,7 @@ export const categories = [
 export interface Video {
   id: string;
   title: string;
-  thumbnailUrl: string;
+  snippet: any; // Simplified for mock
   views: number;
   likes: number;
   comments: number;
@@ -40,6 +40,13 @@ export interface Video {
   category: string;
   isShort: boolean;
   dataAiHint: string;
+  commentsData: CommentData[];
+}
+
+export interface CommentData {
+  author: string;
+  authorImageUrl: string;
+  text: string;
 }
 
 // Simulando uma estrutura mais próxima da API do YouTube
@@ -65,6 +72,11 @@ const mockApiVideos = [
     contentDetails: {
       duration: 'PT15M23S',
     },
+    commentsData: [
+        { author: 'Ana B.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Excelente guia! Muito claro e direto ao ponto.'},
+        { author: 'Carlos S.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Isso me ajudou a estruturar todo o meu processo. Obrigado!'},
+        { author: 'Mariana L.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Gostaria de ver mais sobre a priorização de features.'},
+    ]
   },
   {
     id: 'h55-w4I5s5g',
@@ -87,6 +99,10 @@ const mockApiVideos = [
     contentDetails: {
       duration: 'PT25M10S',
     },
+    commentsData: [
+        { author: 'Pedro M.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Vídeo inspirador! Mostra que é possível começar pequeno.'},
+        { author: 'Julia A.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Quais ferramentas você recomenda para o MVP?'},
+    ]
   },
   {
     id: 's_obIuWwe_M',
@@ -109,6 +125,10 @@ const mockApiVideos = [
     contentDetails: {
       duration: 'PT0M45S',
     },
+    commentsData: [
+        { author: 'Fernanda C.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Curto, mas muito eficaz! Adorei as dicas.'},
+        { author: 'Lucas P.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Ótima introdução ao mundo do UX.'},
+    ]
   },
   {
     id: 'Qaqs22Sh36A',
@@ -131,6 +151,7 @@ const mockApiVideos = [
     contentDetails: {
       duration: 'PT18M50S',
     },
+    commentsData: []
   },
   {
     id: 'WcI_1i8hr5U',
@@ -153,6 +174,9 @@ const mockApiVideos = [
     contentDetails: {
       duration: 'PT45M30S',
     },
+    commentsData: [
+        { author: 'Ricardo T.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Explicação muito técnica, mas valeu a pena.'},
+    ]
   },
   {
     id: 'S4zBSP01D38',
@@ -175,16 +199,20 @@ const mockApiVideos = [
     contentDetails: {
       duration: 'PT0M59S',
     },
+    commentsData: [
+        { author: 'Beatriz R.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Mudou minha perspectiva sobre dinheiro.'},
+        { author: 'André F.', authorImageUrl: 'https://placehold.co/40x40.png', text: 'Preciso começar a investir agora mesmo.'},
+    ]
   },
 ];
 
 const dataAiHints: {[key: string]: string} = {
-  'gC_x9-y_4Qc': 'reunião de negócios',
-  'h55-w4I5s5g': 'escritório de startup',
-  's_obIuWwe_M': 'wireframe de design',
-  'Qaqs22Sh36A': 'estratégia de marketing',
-  'WcI_1i8hr5U': 'inteligência artificial',
-  'S4zBSP01D38': 'gráfico financeiro',
+  'gC_x9-y_4Qc': 'business meeting',
+  'h55-w4I5s5g': 'startup office',
+  's_obIuWwe_M': 'design wireframe',
+  'Qaqs22Sh36A': 'marketing strategy',
+  'WcI_1i8hr5U': 'artificial intelligence',
+  'S4zBSP01D38': 'finance graph',
 };
 
 // Função para formatar a duração do formato ISO 8601 para MM:SS
@@ -216,7 +244,7 @@ const mapApiToVideo = (apiVideo: any, index: number): Video => {
   return {
     id: `${apiVideo.id}-${index}`, // Make id unique for generated data
     title: `${apiVideo.snippet.title} #${index + 1}`,
-    thumbnailUrl: apiVideo.snippet.thumbnails.high.url,
+    snippet: apiVideo.snippet,
     views: parseInt(apiVideo.statistics.viewCount, 10) - (index * 1000),
     likes: parseInt(apiVideo.statistics.likeCount, 10) - (index * 100),
     comments: parseInt(apiVideo.statistics.commentCount, 10) - (index * 10),
@@ -226,7 +254,8 @@ const mapApiToVideo = (apiVideo: any, index: number): Video => {
     channel: apiVideo.snippet.channelTitle,
     category: categories.find(c => c.value === apiVideo.snippet.categoryId)?.label || 'Desconhecido',
     isShort: totalSeconds <= 60,
-    dataAiHint: dataAiHints[apiVideo.id] || 'vídeo do youtube'
+    dataAiHint: dataAiHints[apiVideo.id] || 'youtube video',
+    commentsData: apiVideo.commentsData || []
   };
 };
 

@@ -23,6 +23,7 @@ import {
   ArrowDown,
   ArrowUp,
   Clapperboard,
+  Clock,
   ExternalLink,
   MoreVertical,
   PlaySquare,
@@ -105,7 +106,6 @@ export function VideoTable({
           <SortableHeader columnKey="views">Visualizações</SortableHeader>
           <SortableHeader columnKey="likes">Likes</SortableHeader>
           <TableHead>Comentários</TableHead>
-          <SortableHeader columnKey="duration">Duração</SortableHeader>
           <SortableHeader columnKey="publishedAt">Data</SortableHeader>
           <TableHead className="w-[100px] text-center">Ações</TableHead>
         </TableRow>
@@ -120,7 +120,7 @@ export function VideoTable({
                     href={video.videoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block h-[68px] w-[120px] flex-shrink-0 overflow-hidden rounded-md"
+                    className="relative block h-[68px] w-[120px] flex-shrink-0 overflow-hidden rounded-md"
                   >
                     <img
                       src={video.snippet.thumbnails.high.url}
@@ -140,18 +140,22 @@ export function VideoTable({
                     >
                       <p className="font-medium leading-tight">{video.title}</p>
                     </Link>
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clapperboard className="h-3 w-3" />
+                        <span>{video.category}</span>
+                      </div>
                       <div className="flex items-center gap-1">
                         <UserSquare className="h-3 w-3" />
                         <span>{video.channel}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Clapperboard className="h-3 w-3" />
-                        <span>{video.category}</span>
+                        <Clock className="h-3 w-3" />
+                        <span>{video.duration}</span>
                       </div>
                       {video.isShort && (
                         <div className="flex items-center gap-1">
-                          <PlaySquare className="h-3 w-3 text-red-500" />
+                          <PlaySquare className="h-3.5 w-3.5 text-red-500" />
                           <span className="font-semibold text-red-500">
                             Shorts
                           </span>
@@ -186,9 +190,6 @@ export function VideoTable({
                     <span className="sr-only">Ver comentários</span>
                   </Button>
                 </div>
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {video.duration}
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatDate(video.publishedAt)}

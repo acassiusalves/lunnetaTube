@@ -19,8 +19,8 @@ import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
-  title: 'Market Miner',
-  description: 'AI-powered market analysis for video content.',
+  title: 'Analisador de Mercado',
+  description: 'Análise de mercado com tecnologia de IA para conteúdo de vídeo.',
 };
 
 export default function RootLayout({
@@ -29,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -47,7 +47,7 @@ export default function RootLayout({
                   <Link href="/" legacyBehavior passHref>
                     <SidebarMenuButton isActive>
                       <LayoutDashboard />
-                      <span>Dashboard</span>
+                      <span>Painel</span>
                     </SidebarMenuButton>
                   </Link>
                 </SidebarMenuItem>
@@ -55,7 +55,7 @@ export default function RootLayout({
                   <Link href="#" legacyBehavior passHref>
                     <SidebarMenuButton>
                       <TrendingUp />
-                      <span>Trending</span>
+                      <span>Tendências</span>
                     </SidebarMenuButton>
                   </Link>
                 </SidebarMenuItem>
@@ -63,7 +63,7 @@ export default function RootLayout({
                   <Link href="#" legacyBehavior passHref>
                     <SidebarMenuButton>
                       <Settings />
-                      <span>Settings</span>
+                      <span>Configurações</span>
                     </SidebarMenuButton>
                   </Link>
                 </SidebarMenuItem>

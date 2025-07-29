@@ -10,18 +10,18 @@ export function SignupForm() {
 
     const handleSignup = (e: React.FormEvent) => {
         e.preventDefault();
-        // In a real app, you'd handle user registration here
+        // Em um aplicativo real, você lidaria com o registro do usuário aqui
         router.push("/");
     };
 
   return (
     <form onSubmit={handleSignup} className="grid gap-4">
       <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">E-mail</Label>
         <Input
           id="email"
           type="email"
-          placeholder="m@example.com"
+          placeholder="m@exemplo.com"
           required
         />
       </div>
@@ -30,16 +30,16 @@ export function SignupForm() {
         <Input
           id="whatsapp"
           type="tel"
-          placeholder="+1234567890"
+          placeholder="+5511999999999"
           required
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">Senha</Label>
         <Input id="password" type="password" required />
       </div>
       <Button type="submit" className="w-full">
-        Create account
+        Criar conta
       </Button>
     </form>
   );

@@ -36,29 +36,29 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
   return (
     <Tabs defaultValue="keyword">
       <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="keyword">Search by Keyword</TabsTrigger>
-        <TabsTrigger value="trending">Trending Videos</TabsTrigger>
+        <TabsTrigger value="keyword">Pesquisar por Palavra-chave</TabsTrigger>
+        <TabsTrigger value="trending">Vídeos em Alta</TabsTrigger>
       </TabsList>
       <TabsContent value="keyword">
         <Card>
           <CardHeader>
-            <CardTitle>Keyword Search</CardTitle>
+            <CardTitle>Pesquisa por Palavra-chave</CardTitle>
             <CardDescription>
-              Find videos based on keywords and specific filters.
+              Encontre vídeos com base em palavras-chave e filtros específicos.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleFormSubmit} className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div className="space-y-2 lg:col-span-2">
-                  <Label htmlFor="keyword">Keyword</Label>
-                  <Input id="keyword" placeholder="e.g., 'product management tools'" />
+                  <Label htmlFor="keyword">Palavra-chave</Label>
+                  <Input id="keyword" placeholder="ex: 'ferramentas de gestão de produtos'" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="country">Country</Label>
+                  <Label htmlFor="country">País</Label>
                   <Select>
                     <SelectTrigger id="country">
-                      <SelectValue placeholder="Select a country" />
+                      <SelectValue placeholder="Selecione um país" />
                     </SelectTrigger>
                     <SelectContent>
                       {countries.map((country) => (
@@ -70,15 +70,15 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="views">Minimum Views</Label>
-                  <Input id="views" type="number" placeholder="e.g., 100000" />
+                  <Label htmlFor="views">Mínimo de Visualizações</Label>
+                  <Input id="views" type="number" placeholder="ex: 100000" />
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center space-x-2">
                   <Checkbox id="exclude-shorts-keyword" />
                   <Label htmlFor="exclude-shorts-keyword" className="text-sm font-normal">
-                    Exclude Shorts
+                    Excluir Shorts
                   </Label>
                 </div>
                 <Button type="submit" disabled={isLoading} className="w-full sm:w-auto bg-accent hover:bg-accent/90">
@@ -87,7 +87,7 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
                   ) : (
                     <Search className="mr-2 h-4 w-4" />
                   )}
-                  Search
+                  Pesquisar
                 </Button>
               </div>
             </form>
@@ -97,19 +97,19 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
       <TabsContent value="trending">
         <Card>
           <CardHeader>
-            <CardTitle>Trending Videos</CardTitle>
+            <CardTitle>Vídeos em Alta</CardTitle>
             <CardDescription>
-              Discover what's currently trending in different categories.
+              Descubra o que está em alta em diferentes categorias.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleFormSubmit} className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
                  <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">Categoria</Label>
                   <Select>
                     <SelectTrigger id="category">
-                      <SelectValue placeholder="Select a category" />
+                      <SelectValue placeholder="Selecione uma categoria" />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((category) => (
@@ -121,10 +121,10 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
                   </Select>
                 </div>
                  <div className="space-y-2">
-                  <Label htmlFor="country-trending">Country</Label>
+                  <Label htmlFor="country-trending">País</Label>
                   <Select>
                     <SelectTrigger id="country-trending">
-                      <SelectValue placeholder="Select a country" />
+                      <SelectValue placeholder="Selecione um país" />
                     </SelectTrigger>
                     <SelectContent>
                       {countries.map((country) => (
@@ -140,7 +140,7 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
                 <div className="flex items-center space-x-2">
                   <Checkbox id="exclude-shorts-trending" />
                   <Label htmlFor="exclude-shorts-trending" className="text-sm font-normal">
-                    Exclude Shorts
+                    Excluir Shorts
                   </Label>
                 </div>
                 <Button type="submit" disabled={isLoading} className="w-full sm:w-auto bg-accent hover:bg-accent/90">
@@ -149,7 +149,7 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
                   ) : (
                     <Search className="mr-2 h-4 w-4" />
                   )}
-                  Search
+                  Pesquisar
                 </Button>
               </div>
             </form>

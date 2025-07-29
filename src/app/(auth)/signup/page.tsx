@@ -18,9 +18,9 @@ export default function SignupPage() {
         <div className="mx-auto">
           <Logo />
         </div>
-        <CardTitle className="text-2xl">Create an account</CardTitle>
+        <CardTitle className="text-2xl">Criar uma conta</CardTitle>
         <CardDescription>
-          Enter your details below to create your account.
+          Digite seus dados abaixo para criar sua conta.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -28,9 +28,9 @@ export default function SignupPage() {
       </CardContent>
       <CardFooter className="flex justify-center text-sm">
         <p>
-          Already have an account?{" "}
+          Já tem uma conta?{" "}
           <Link href="/login" className="font-semibold text-primary hover:underline">
-            Log in
+            Entrar
           </Link>
         </p>
       </CardFooter>

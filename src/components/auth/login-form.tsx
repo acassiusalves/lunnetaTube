@@ -10,29 +10,29 @@ export function LoginForm() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd handle authentication here
+    // Em um aplicativo real, você lidaria com a autenticação aqui
     router.push("/");
   };
 
   return (
     <form onSubmit={handleLogin} className="grid gap-4">
       <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">E-mail</Label>
         <Input
           id="email"
           type="email"
-          placeholder="m@example.com"
+          placeholder="m@exemplo.com"
           required
         />
       </div>
       <div className="grid gap-2">
         <div className="flex items-center">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">Senha</Label>
         </div>
         <Input id="password" type="password" required />
       </div>
       <Button type="submit" className="w-full">
-        Log in
+        Entrar
       </Button>
     </form>
   );

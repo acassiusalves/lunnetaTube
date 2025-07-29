@@ -18,9 +18,9 @@ export default function LoginPage() {
         <div className="mx-auto">
           <Logo />
         </div>
-        <CardTitle className="text-2xl">Welcome back</CardTitle>
+        <CardTitle className="text-2xl">Bem-vindo de volta</CardTitle>
         <CardDescription>
-          Enter your email below to log in to your account.
+          Digite seu e-mail abaixo para entrar em sua conta.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -28,9 +28,9 @@ export default function LoginPage() {
       </CardContent>
       <CardFooter className="flex justify-center text-sm">
         <p>
-          Don&apos;t have an account?{" "}
+          Não tem uma conta?{" "}
           <Link href="/signup" className="font-semibold text-primary hover:underline">
-            Sign up
+            Cadastre-se
           </Link>
         </p>
       </CardFooter>

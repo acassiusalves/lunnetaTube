@@ -37,7 +37,7 @@ interface AnalysisDialogProps {
   analysisType: "content" | "comments";
 }
 
-const mockCommentData = "These are some great insights! I'd love to see a follow-up on point #3. Could you also explain how this applies to e-commerce? This is super helpful, thank you for sharing. I disagree with the main premise, I think there are better ways to approach this. What tool did you use at 5:32?";
+const mockCommentData = "Esses são ótimos insights! Adoraria ver um acompanhamento do ponto #3. Você também poderia explicar como isso se aplica ao e-commerce? Isso é super útil, obrigado por compartilhar. Discordo da premissa principal, acho que existem maneiras melhores de abordar isso. Qual ferramenta você usou em 5:32?";
 
 export function AnalysisDialog({ isOpen, setIsOpen, video, analysisType }: AnalysisDialogProps) {
   const [transcription, setTranscription] = useState<TranscribeVideoOutput | null>(null);
@@ -68,7 +68,7 @@ export function AnalysisDialog({ isOpen, setIsOpen, video, analysisType }: Analy
             try {
                 if (analysisType === 'content') {
                     setIsLoadingTranscription(true);
-                    // In a real app, you would fetch the video file and convert to data URI
+                    // Em um aplicativo real, você buscaria o arquivo de vídeo e converteria para data URI
                     const fakeVideoDataUri = "data:video/mp4;base64,AAAA...';";
                     const transcriptionResult = await transcribeVideo({ videoDataUri: fakeVideoDataUri });
                     setTranscription(transcriptionResult);
@@ -81,14 +81,14 @@ export function AnalysisDialog({ isOpen, setIsOpen, video, analysisType }: Analy
 
                 } else if (analysisType === 'comments') {
                     setIsLoadingComments(true);
-                    // In a real app, you would fetch comments from the YouTube API
+                    // Em um aplicativo real, você buscaria os comentários da API do YouTube
                     const commentsResult = await analyzeComments({ comments: mockCommentData });
                     setCommentAnalysis(commentsResult);
                     setIsLoadingComments(false);
                 }
             } catch (e) {
                 console.error(e);
-                setError("An error occurred during analysis. This is a mock error, as AI features require configuration.");
+                setError("Ocorreu um erro durante a análise. Este é um erro simulado, pois os recursos de IA requerem configuração.");
                 setIsLoadingTranscription(false);
                 setIsLoadingContent(false);
                 setIsLoadingComments(false);
@@ -110,12 +110,12 @@ export function AnalysisDialog({ isOpen, setIsOpen, video, analysisType }: Analy
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>AI Analysis: {video.title}</DialogTitle>
+          <DialogTitle>Análise de IA: {video.title}</DialogTitle>
         </DialogHeader>
         {error && (
             <Alert variant="destructive">
                 <Terminal className="h-4 w-4" />
-                <AlertTitle>Analysis Error</AlertTitle>
+                <AlertTitle>Erro de Análise</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
             </Alert>
         )}
@@ -124,26 +124,26 @@ export function AnalysisDialog({ isOpen, setIsOpen, video, analysisType }: Analy
             {analysisType === 'content' && (
               <>
                 <AccordionItem value="transcription">
-                  <AccordionTrigger>Video Transcription</AccordionTrigger>
+                  <AccordionTrigger>Transcrição do Vídeo</AccordionTrigger>
                   <AccordionContent>
                     {isLoadingTranscription ? <LoadingSkeleton /> : <p className="whitespace-pre-wrap text-sm">{transcription?.transcription}</p>}
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="content-analysis">
-                  <AccordionTrigger>Content Analysis</AccordionTrigger>
+                  <AccordionTrigger>Análise de Conteúdo</AccordionTrigger>
                   <AccordionContent className="space-y-4">
                     {isLoadingContent ? <LoadingSkeleton /> : (
                       <>
                         <div>
-                          <h4 className="font-semibold">Pain Points</h4>
+                          <h4 className="font-semibold">Pontos de Dor</h4>
                           <p className="whitespace-pre-wrap text-sm text-muted-foreground">{contentAnalysis?.painPoints}</p>
                         </div>
                         <div>
-                          <h4 className="font-semibold">Frequently Asked Questions</h4>
+                          <h4 className="font-semibold">Perguntas Frequentes</h4>
                           <p className="whitespace-pre-wrap text-sm text-muted-foreground">{contentAnalysis?.faqs}</p>
                         </div>
                         <div>
-                          <h4 className="font-semibold">Product Opportunities</h4>
+                          <h4 className="font-semibold">Oportunidades de Produto</h4>
                           <p className="whitespace-pre-wrap text-sm text-muted-foreground">{contentAnalysis?.productNeeds}</p>
                         </div>
                       </>
@@ -154,20 +154,20 @@ export function AnalysisDialog({ isOpen, setIsOpen, video, analysisType }: Analy
             )}
             {analysisType === 'comments' && (
               <AccordionItem value="comment-analysis">
-                <AccordionTrigger>Comment Analysis</AccordionTrigger>
+                <AccordionTrigger>Análise de Comentários</AccordionTrigger>
                 <AccordionContent className="space-y-4">
                   {isLoadingComments ? <LoadingSkeleton /> : (
                     <>
                       <div>
-                        <h4 className="font-semibold">Overall Sentiment</h4>
+                        <h4 className="font-semibold">Sentimento Geral</h4>
                         <p className="whitespace-pre-wrap text-sm text-muted-foreground">{commentAnalysis?.sentiment}</p>
                       </div>
                       <div>
-                        <h4 className="font-semibold">Key Themes</h4>
+                        <h4 className="font-semibold">Temas Principais</h4>
                         <p className="whitespace-pre-wrap text-sm text-muted-foreground">{commentAnalysis?.keyThemes}</p>
                       </div>
                       <div>
-                        <h4 className="font-semibold">Summary</h4>
+                        <h4 className="font-semibold">Resumo</h4>
                         <p className="whitespace-pre-wrap text-sm text-muted-foreground">{commentAnalysis?.summary}</p>
                       </div>
                     </>

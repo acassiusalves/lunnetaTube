@@ -60,15 +60,15 @@ export function VideoCard({ video, onAnalyze }: VideoCardProps) {
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Eye className="h-4 w-4" />
-            <span>{formatNumber(video.views)} views</span>
+            <span>{formatNumber(video.views)} visualizações</span>
           </div>
           <div className="flex items-center gap-1.5">
             <ThumbsUp className="h-4 w-4" />
-            <span>{formatNumber(video.likes)} likes</span>
+            <span>{formatNumber(video.likes)} curtidas</span>
           </div>
           <div className="flex items-center gap-1.5">
             <MessageSquare className="h-4 w-4" />
-            <span>{formatNumber(video.comments)} comments</span>
+            <span>{formatNumber(video.comments)} comentários</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Calendar className="h-4 w-4" />
@@ -83,7 +83,7 @@ export function VideoCard({ video, onAnalyze }: VideoCardProps) {
           onClick={() => onAnalyze(video, "content")}
         >
           <Sparkles className="mr-2 h-4 w-4" />
-          Transcribe & Analyze
+          Transcrever e Analisar
         </Button>
         <Button
           size="sm"
@@ -92,7 +92,7 @@ export function VideoCard({ video, onAnalyze }: VideoCardProps) {
           onClick={() => onAnalyze(video, "comments")}
         >
           <MessagesSquare className="mr-2 h-4 w-4" />
-          Analyze Comments
+          Analisar Comentários
         </Button>
       </CardFooter>
     </Card>

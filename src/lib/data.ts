@@ -1,29 +1,29 @@
 export const countries = [
-  { value: 'us', label: 'United States' },
-  { value: 'gb', label: 'United Kingdom' },
-  { value: 'ca', label: 'Canada' },
-  { value: 'au', label: 'Australia' },
-  { value: 'de', label: 'Germany' },
-  { value: 'fr', label: 'France' },
-  { value: 'jp', label: 'Japan' },
-  { value: 'in', label: 'India' },
-  { value: 'br', label: 'Brazil' },
+  { value: 'br', label: 'Brasil' },
+  { value: 'us', label: 'Estados Unidos' },
+  { value: 'gb', label: 'Reino Unido' },
+  { value: 'ca', label: 'Canadá' },
+  { value: 'au', label: 'Austrália' },
+  { value: 'de', label: 'Alemanha' },
+  { value: 'fr', label: 'França' },
+  { value: 'jp', label: 'Japão' },
+  { value: 'in', label: 'Índia' },
 ];
 
 export const categories = [
-  { value: '1', label: 'Film & Animation' },
-  { value: '2', label: 'Autos & Vehicles' },
-  { value: '10', label: 'Music' },
-  { value: '15', label: 'Pets & Animals' },
-  { value: '17', label: 'Sports' },
-  { value: '20', label: 'Gaming' },
-  { value: '22', label: 'People & Blogs' },
-  { value: '23', label: 'Comedy' },
-  { value: '24', label: 'Entertainment' },
-  { value: '25', label: 'News & Politics' },
-  { value: '26', label: 'Howto & Style' },
-  { value: '27', label: 'Education' },
-  { value: '28', label: 'Science & Technology' },
+  { value: '1', label: 'Filmes e Animação' },
+  { value: '2', label: 'Automóveis e Veículos' },
+  { value: '10', label: 'Música' },
+  { value: '15', label: 'Animais de Estimação' },
+  { value: '17', label: 'Esportes' },
+  { value: '20', label: 'Jogos' },
+  { value: '22', label: 'Pessoas e Blogs' },
+  { value: '23', label: 'Comédia' },
+  { value: '24', label: 'Entretenimento' },
+  { value: '25', label: 'Notícias e Política' },
+  { value: '26', label: 'Como Fazer e Estilo' },
+  { value: '27', label: 'Educação' },
+  { value: '28', label: 'Ciência e Tecnologia' },
 ];
 
 export interface Video {
@@ -42,7 +42,7 @@ export interface Video {
 const mockVideos: Video[] = [
   {
     id: '1',
-    title: 'The Ultimate Guide to Product Management',
+    title: 'O Guia Definitivo para Gestão de Produtos',
     thumbnailUrl: 'https://placehold.co/400x225.png',
     views: 1205432,
     likes: 89342,
@@ -50,11 +50,11 @@ const mockVideos: Video[] = [
     duration: '15:23',
     publishedAt: '2023-10-26',
     videoUrl: '#',
-    dataAiHint: 'business meeting'
+    dataAiHint: 'reunião de negócios'
   },
   {
     id: '2',
-    title: 'How to Start a SaaS Business in 2024',
+    title: 'Como Iniciar um Negócio SaaS em 2024',
     thumbnailUrl: 'https://placehold.co/400x225.png',
     views: 876345,
     likes: 65432,
@@ -62,11 +62,11 @@ const mockVideos: Video[] = [
     duration: '25:10',
     publishedAt: '2023-11-15',
     videoUrl: '#',
-    dataAiHint: 'startup office'
+    dataAiHint: 'escritório de startup'
   },
   {
     id: '3',
-    title: 'UX Design Principles for Beginners',
+    title: 'Princípios de Design de UX para Iniciantes',
     thumbnailUrl: 'https://placehold.co/400x225.png',
     views: 2345678,
     likes: 123456,
@@ -74,11 +74,11 @@ const mockVideos: Video[] = [
     duration: '12:45',
     publishedAt: '2023-09-01',
     videoUrl: '#',
-    dataAiHint: 'design wireframe'
+    dataAiHint: 'wireframe de design'
   },
   {
     id: '4',
-    title: 'Top 5 Marketing Strategies for Small Businesses',
+    title: 'Top 5 Estratégias de Marketing para Pequenas Empresas',
     thumbnailUrl: 'https://placehold.co/400x225.png',
     views: 543210,
     likes: 43210,
@@ -86,11 +86,11 @@ const mockVideos: Video[] = [
     duration: '18:50',
     publishedAt: '2024-01-05',
     videoUrl: '#',
-    dataAiHint: 'marketing strategy'
+    dataAiHint: 'estratégia de marketing'
   },
   {
     id: '5',
-    title: 'A Deep Dive into Machine Learning Models',
+    title: 'Um Mergulho Profundo em Modelos de Machine Learning',
     thumbnailUrl: 'https://placehold.co/400x225.png',
     views: 987654,
     likes: 76543,
@@ -98,11 +98,11 @@ const mockVideos: Video[] = [
     duration: '45:30',
     publishedAt: '2023-12-20',
     videoUrl: '#',
-    dataAiHint: 'artificial intelligence'
+    dataAiHint: 'inteligência artificial'
   },
   {
     id: '6',
-    title: 'Mastering Financial Freedom: A Step-by-Step Guide',
+    title: 'Dominando a Liberdade Financeira: Um Guia Passo a Passo',
     thumbnailUrl: 'https://placehold.co/400x225.png',
     views: 3456789,
     likes: 234567,
@@ -110,7 +110,7 @@ const mockVideos: Video[] = [
     duration: '35:00',
     publishedAt: '2023-08-10',
     videoUrl: '#',
-    dataAiHint: 'finance chart'
+    dataAiHint: 'gráfico financeiro'
   },
 ];
 

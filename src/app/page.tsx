@@ -35,9 +35,9 @@ export default function DashboardPage() {
     <div className="container mx-auto max-w-7xl">
       <div className="space-y-4">
         <header>
-          <h1 className="text-3xl font-bold tracking-tight">Market Miner</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Analisador de Mercado</h1>
           <p className="text-muted-foreground">
-            Uncover insights from YouTube videos to fuel your next big idea.
+            Descubra insights de vídeos do YouTube para impulsionar sua próxima grande ideia.
           </p>
         </header>
 

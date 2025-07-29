@@ -120,13 +120,14 @@ export function VideoTable({
                     href={video.videoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="block h-[68px] w-[120px] flex-shrink-0 overflow-hidden rounded-md"
                   >
                     <img
                       src={video.snippet.thumbnails.high.url}
                       alt={video.title}
                       width={120}
                       height={68}
-                      className="rounded-md object-cover"
+                      className="h-full w-full object-cover"
                       data-ai-hint={video.dataAiHint}
                     />
                   </Link>

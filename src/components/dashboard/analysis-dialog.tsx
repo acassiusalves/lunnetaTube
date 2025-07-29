@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -69,7 +70,7 @@ export function AnalysisDialog({ isOpen, setIsOpen, video, analysisType }: Analy
                 if (analysisType === 'content') {
                     setIsLoadingTranscription(true);
                     // Em um aplicativo real, você buscaria o arquivo de vídeo e converteria para data URI
-                    const fakeVideoDataUri = "data:video/mp4;base64,AAAA...';";
+                    const fakeVideoDataUri = "data:video/mp4;base64,AAAAFGZ0eXBNU05WAAACAE1TTlYgAAAAAAYAAAFucGF2YwAAAAEAAABtYWN0dAAAAAAAAAAPAAAAAQAAAAEAAAAAAQAAAAEAAAAAAAAAIAAABwEAAABvbm1ldGEAAAAPAAAAC1VTQ0lQUk9GSUxFAAAAEAAAABFVU0NNVEFQUk9GSUxFAAAAAQAAAEdTU0lEPg==";
                     const transcriptionResult = await transcribeVideo({ videoDataUri: fakeVideoDataUri });
                     setTranscription(transcriptionResult);
                     setIsLoadingTranscription(false);

@@ -42,6 +42,7 @@ export interface Video {
   isShort: boolean;
   dataAiHint: string;
   commentsData: CommentData[];
+  tags: string[];
 }
 
 export interface CommentData {
@@ -60,6 +61,7 @@ const dataAiHints: {[key: string]: string} = {
 };
 
 const formatDuration = (duration: string): string => {
+  if (!duration) return "00:00";
   const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
   if (!match) return "00:00";
 
@@ -80,9 +82,9 @@ const formatDuration = (duration: string): string => {
 
 export const mapApiToVideo = (apiVideo: any): Video => {
   const duration = formatDuration(apiVideo.contentDetails.duration);
-  const totalSeconds = (parseInt(apiVideo.contentDetails.duration.match(/(\d+)S/)?.[1] || '0', 10)) + 
-                     (parseInt(apiVideo.contentDetails.duration.match(/(\d+)M/)?.[1] || '0', 10) * 60) +
-                     (parseInt(apiVideo.contentDetails.duration.match(/(\d+)H/)?.[1] || '0', 10) * 3600);
+  const totalSeconds = (parseInt(apiVideo.contentDetails.duration?.match(/(\d+)S/)?.[1] || '0', 10)) + 
+                     (parseInt(apiVideo.contentDetails.duration?.match(/(\d+)M/)?.[1] || '0', 10) * 60) +
+                     (parseInt(apiVideo.contentDetails.duration?.match(/(\d+)H/)?.[1] || '0', 10) * 3600);
   return {
     id: apiVideo.id.videoId || apiVideo.id,
     title: apiVideo.snippet.title,
@@ -97,6 +99,7 @@ export const mapApiToVideo = (apiVideo: any): Video => {
     category: categories.find(c => c.value === apiVideo.snippet.categoryId)?.label || 'Desconhecido',
     isShort: totalSeconds <= 60,
     dataAiHint: dataAiHints[apiVideo.id.videoId || apiVideo.id] || 'youtube video',
-    commentsData: apiVideo.commentsData || [] // This will need a separate API call in reality
+    commentsData: apiVideo.commentsData || [], // This will need a separate API call in reality
+    tags: apiVideo.snippet.tags || [],
   };
 };

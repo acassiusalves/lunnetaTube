@@ -22,24 +22,17 @@ import {
   ArrowDown,
   ArrowUp,
   Clapperboard,
-  Clock,
   ExternalLink,
   MoreVertical,
-  PlaySquare,
   MessagesSquare,
   Sparkles,
-  UserSquare,
   ArrowUpDown,
   ChevronDown,
   ChevronUp,
+  Tag,
 } from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "../ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar } from "../ui/avatar";
 
 export interface SortConfig {
   key: keyof Video | null;
@@ -67,6 +60,7 @@ export function VideoTable({
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString || !dateString.includes('-')) return "N/A";
     const [year, month, day] = dateString.split("-");
     return `${day}/${month}/${year}`;
   };
@@ -101,29 +95,19 @@ export function VideoTable({
 
   const ShortsIcon = () => (
     <svg
-      width="1em"
-      height="1em"
-      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      viewBox="0 0 1024 1024"
       xmlns="http://www.w3.org/2000/svg"
-      className="h-3.5 w-3.5"
-      aria-hidden="true"
+      className="h-5 w-5"
     >
-      <defs>
-        <linearGradient id="shorts-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" style={{ stopColor: "#FF0000", stopOpacity: 1 }} />
-          <stop
-            offset="100%"
-            style={{ stopColor: "#FF4D4D", stopOpacity: 1 }}
-          />
-        </linearGradient>
-      </defs>
       <path
-        fill="url(#shorts-gradient)"
-        d="M17.52 2.47a2.5 2.5 0 0 0-3.53 0L8.8 7.66a2.5 2.5 0 0 0 0 3.53l5.2 5.2a2.5 2.5 0 0 0 3.53 0l5.2-5.2a2.5 2.5 0 0 0 0-3.53zM6.47 15.22l5.2 5.2a2.5 2.5 0 0 0 3.53 0L17.52 18a2.5 2.5 0 0 0 0-3.53L12.33 9.3a.5.5 0 0 1 0-.7l1-1a.5.5 0 0 1 .7 0l5.2 5.2a.5.5 0 0 1 0 .7l-1 1a.5.5 0 0 1-.7 0L12.33 11a2.5 2.5 0 0 0-3.53 0l-5.2 5.2a2.5 2.5 0 0 0 0 3.53l2.33 2.33a2.5 2.5 0 0 0 3.53 0l.71-.71a2.5 2.5 0 0 0-3.54-3.54z"
+        fill="#FF0000"
+        d="M840.4 300H183.6c-19.7 0-30.7 20.8-18.5 35l328.4 444.9c14.3 19.4 46.2 19.4 60.5 0L858.9 335c12.2-14.2 1.2-35-18.5-35z"
       ></path>
       <path
         fill="#FFFFFF"
-        d="m10.44 14.59l3.56-2.06a.5.5 0 0 0 0-.86l-3.56-2.06A.5.5 0 0 0 9.75 10v4.1a.5.5 0 0 0 .69.49z"
+        d="m412 654.5l234-142.9c12.7-7.7 12.7-25.2 0-32.9l-234-142.9c-12.2-7.4-27.4 1.8-27.4 16.4v285.8c0 14.6 15.2 23.8 27.4 16.5z"
       ></path>
     </svg>
   );
@@ -160,8 +144,8 @@ export function VideoTable({
                         data-ai-hint={video.dataAiHint}
                       />
                     </Link>
-                    <div className="space-y-1">
-                      <Link
+                    <div className="space-y-1.5">
+                       <Link
                         href={video.videoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -169,25 +153,21 @@ export function VideoTable({
                       >
                         <p className="font-medium leading-tight">{video.title}</p>
                       </Link>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clapperboard className="h-3.5 w-3.5 text-sky-500" fill="currentColor" />
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <Clapperboard className="h-4 w-4 text-gray-500" />
                           <span>{video.category}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <UserSquare className="h-3.5 w-3.5 text-orange-500" fill="currentColor" />
-                          <span>{video.channel}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5 text-indigo-500" />
-                          <span>{video.duration}</span>
-                        </div>
+                        {video.tags && video.tags.length > 0 && (
+                           <div className="flex items-center gap-1.5">
+                             <Tag className="h-4 w-4 text-gray-500" />
+                             <span className="truncate">{video.tags.slice(0, 5).join(', ')}</span>
+                           </div>
+                        )}
                         {video.isShort && (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             <ShortsIcon />
-                            <span className="font-semibold text-red-600">
-                              Shorts
-                            </span>
+                            <span className="font-semibold">Shorts</span>
                           </div>
                         )}
                       </div>

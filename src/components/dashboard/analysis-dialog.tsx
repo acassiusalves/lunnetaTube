@@ -88,7 +88,7 @@ export function AnalysisDialog({ isOpen, setIsOpen, video, analysisType }: Analy
                 }
             } catch (e) {
                 console.error(e);
-                setError("Ocorreu um erro durante a análise. Este é um erro simulado, pois os recursos de IA requerem configuração.");
+                setError("Ocorreu um erro durante a análise. A transcrição de vídeo real requer a configuração da API do YouTube para baixar o arquivo de vídeo e, em seguida, processá-lo, o que está além da demonstração atual.");
                 setIsLoadingTranscription(false);
                 setIsLoadingContent(false);
                 setIsLoadingComments(false);
@@ -126,27 +126,31 @@ export function AnalysisDialog({ isOpen, setIsOpen, video, analysisType }: Analy
                 <AccordionItem value="transcription">
                   <AccordionTrigger>Transcrição do Vídeo</AccordionTrigger>
                   <AccordionContent>
-                    {isLoadingTranscription ? <LoadingSkeleton /> : <p className="whitespace-pre-wrap text-sm">{transcription?.transcription}</p>}
+                    {isLoadingTranscription ? <LoadingSkeleton /> : transcription ? (
+                      <p className="whitespace-pre-wrap text-sm">{transcription.transcription}</p>
+                    ) : <p className="text-sm text-muted-foreground">A transcrição aparecerá aqui.</p>}
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="content-analysis">
                   <AccordionTrigger>Análise de Conteúdo</AccordionTrigger>
                   <AccordionContent className="space-y-4">
-                    {isLoadingContent ? <LoadingSkeleton /> : (
+                    {isLoadingContent ? <LoadingSkeleton /> : contentAnalysis ? (
                       <>
                         <div>
                           <h4 className="font-semibold">Pontos de Dor</h4>
-                          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{contentAnalysis?.painPoints}</p>
+                          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{contentAnalysis.painPoints}</p>
                         </div>
                         <div>
                           <h4 className="font-semibold">Perguntas Frequentes</h4>
-                          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{contentAnalysis?.faqs}</p>
+                          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{contentAnalysis.faqs}</p>
                         </div>
                         <div>
                           <h4 className="font-semibold">Oportunidades de Produto</h4>
-                          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{contentAnalysis?.productNeeds}</p>
+                          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{contentAnalysis.productNeeds}</p>
                         </div>
                       </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">A análise do conteúdo aparecerá aqui após a transcrição.</p>
                     )}
                   </AccordionContent>
                 </AccordionItem>

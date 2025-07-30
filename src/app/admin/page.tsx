@@ -31,32 +31,26 @@ export default function AdminPage() {
   const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
-    // Wait until auth is resolved.
+    // If auth is still loading, do nothing.
     if (authLoading) {
       return;
     }
 
-    // If there's no user after auth check, deny access.
-    if (!user) {
+    // If there's no user or no user profile, deny access.
+    if (!user || !userProfile) {
       setAccessDenied(true);
       setIsLoading(false);
       return;
     }
     
-    // If there is a user, but the profile is not yet loaded, wait.
-    // The useAuth hook will trigger a re-render when userProfile is available.
-    if (!userProfile) {
-        // Still loading profile, do nothing yet.
-        return;
-    }
-
-    // Now we have user and userProfile, check role and fetch data.
+    // If the user is not an admin, deny access.
     if (userProfile.role !== 'admin') {
       setAccessDenied(true);
       setIsLoading(false);
       return;
     }
 
+    // If we reach here, user is an admin. Let's fetch the data.
     const fetchUsers = async () => {
       try {
         const usersCollection = collection(db, 'users');
@@ -129,7 +123,7 @@ export default function AdminPage() {
           <Shield className="h-4 w-4" />
           <AlertTitle>Acesso Negado</AlertTitle>
           <AlertDescription>
-            Você não tem permissão para acessar esta página.
+            Você não tem permissão para acessar esta página. Verifique se você está logado com uma conta de administrador.
           </AlertDescription>
         </Alert>
       </div>

@@ -33,7 +33,9 @@ const prompt = ai.definePrompt({
   name: 'analyzeCommentsPrompt',
   input: {schema: AnalyzeCommentsInputSchema},
   output: {schema: AnalyzeCommentsOutputSchema},
-  prompt: `You are an AI assistant that analyzes video comments to understand the overall sentiment and identify key themes.  You will be provided with a string containing all comments.  Analyze the comments and determine the overall sentiment, key themes, and provide a summary.
+  prompt: `You are an AI assistant that analyzes video comments to understand the overall sentiment and identify key themes. You will be provided with a string containing all comments. Analyze the comments and determine the overall sentiment, key themes, and provide a summary.
+
+Your response must be in Brazilian Portuguese.
 
 Comments: {{{comments}}}`,
 });

@@ -37,6 +37,8 @@ const prompt = ai.definePrompt({
 
   Analyze the following transcript and identify user pain points, frequently asked questions, and potential low-cost product ideas that address user needs.
 
+  Your response must be in Brazilian Portuguese.
+
   Transcript:
   {{transcript}}
 

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Bot, LayoutDashboard, Settings, TrendingUp } from 'lucide-react';
+import { Bot, LayoutDashboard, Settings, TrendingUp, Shield } from 'lucide-react';
 
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -23,6 +23,9 @@ export const metadata: Metadata = {
   title: 'Analisador de Mercado',
   description: 'Análise de mercado com tecnologia de IA para conteúdo de vídeo.',
 };
+
+// Mock admin check. In a real app, this would come from a session.
+const isAdmin = true; // Assuming the logged in user is the admin for now.
 
 export default function RootLayout({
   children,
@@ -61,6 +64,16 @@ export default function RootLayout({
                       </SidebarMenuButton>
                     </Link>
                   </SidebarMenuItem>
+                  {isAdmin && (
+                    <SidebarMenuItem>
+                      <Link href="/admin">
+                        <SidebarMenuButton>
+                          <Shield />
+                          <span>Admin</span>
+                        </SidebarMenuButton>
+                      </Link>
+                    </SidebarMenuItem>
+                  )}
                   <SidebarMenuItem>
                     <Link href="/settings">
                       <SidebarMenuButton>

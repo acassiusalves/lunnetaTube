@@ -21,9 +21,7 @@ const AnalyzeCommentsInputSchema = z.object({
 export type AnalyzeCommentsInput = z.infer<typeof AnalyzeCommentsInputSchema>;
 
 const AnalyzeCommentsOutputSchema = z.object({
-  sentiment: z.string().describe('The overall sentiment of the comments.'),
-  keyThemes: z.string().describe('The key themes that emerge from the comments.'),
-  summary: z.string().describe('A summary of the comments.'),
+    analysis: z.string().describe('The full analysis of the comments, formatted as requested by the prompt.'),
 });
 export type AnalyzeCommentsOutput = z.infer<typeof AnalyzeCommentsOutputSchema>;
 
@@ -50,7 +48,11 @@ const analyzeCommentsFlow = ai.defineFlow(
     const {output} = await ai.generate({
       prompt: `${finalPrompt}\n\nComments:\n${comments}`,
       model: ai.model,
-      output: { schema: AnalyzeCommentsOutputSchema },
+      output: { 
+          schema: z.object({
+              analysis: z.string().describe("The full analysis, formatted exactly as requested in the prompt.")
+          })
+      },
       config: {
           temperature: 0.5,
       }

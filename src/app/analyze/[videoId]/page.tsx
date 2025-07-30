@@ -214,16 +214,8 @@ export default function AnalyzeVideoPage() {
                     {analysis && (
                         <div className="mt-6 space-y-4 text-sm">
                             <div>
-                                <h4 className="font-semibold">Sentimento Geral</h4>
-                                <p className="text-muted-foreground">{analysis.sentiment}</p>
-                            </div>
-                             <div>
-                                <h4 className="font-semibold">Temas Principais</h4>
-                                <p className="text-muted-foreground whitespace-pre-wrap">{analysis.keyThemes}</p>
-                            </div>
-                             <div>
-                                <h4 className="font-semibold">Resumo</h4>
-                                <p className="text-muted-foreground whitespace-pre-wrap">{analysis.summary}</p>
+                                <h4 className="font-semibold">Análise de Comentários</h4>
+                                <p className="text-muted-foreground whitespace-pre-wrap">{analysis.analysis}</p>
                             </div>
                         </div>
                     )}
@@ -276,4 +268,3 @@ export default function AnalyzeVideoPage() {
     </div>
   );
 }
-

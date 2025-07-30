@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -39,6 +40,18 @@ export default function SettingsPage() {
     }
   }, []);
 
+  const handleSavePrompt = () => {
+     if (commentAnalysisPrompt) {
+        localStorage.setItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM, commentAnalysisPrompt);
+    } else {
+        localStorage.removeItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM);
+    }
+     toast({
+        title: "Prompt Salvo",
+        description: "Seu prompt personalizado foi salvo com sucesso.",
+    });
+  }
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Save API Key
@@ -51,11 +64,7 @@ export default function SettingsPage() {
     }
     
     // Save Comment Analysis Prompt
-    if (commentAnalysisPrompt) {
-        localStorage.setItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM, commentAnalysisPrompt);
-    } else {
-        localStorage.removeItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM);
-    }
+    handleSavePrompt();
 
     toast({
         title: "Configurações Salvas",
@@ -145,6 +154,12 @@ export default function SettingsPage() {
               />
             </div>
           </CardContent>
+           <CardFooter className="justify-end">
+            <Button type="button" onClick={handleSavePrompt}>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Prompt
+            </Button>
+          </CardFooter>
         </Card>
       </form>
     </div>

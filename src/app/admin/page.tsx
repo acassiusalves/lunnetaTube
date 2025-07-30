@@ -10,6 +10,9 @@ import { db } from '@/firebase/config';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Shield } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+
 
 export interface UserData {
   id: string;
@@ -21,51 +24,67 @@ export interface UserData {
 }
 
 export default function AdminPage() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<UserData[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
-    if (!loading) {
-      // Redirect if not logged in or not an admin
-      if (!user || userProfile?.role !== 'admin') {
-        // Allow access for a moment to show the access denied message, then redirect if needed
-        // router.push('/'); 
-      } else {
-        // Fetch users from Firestore
-        const fetchUsers = async () => {
-          setIsLoadingUsers(true);
-          try {
-            const usersCollection = collection(db, 'users');
-            const userSnapshot = await getDocs(usersCollection);
-            const userList = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
-                const data = doc.data();
-                return {
-                  id: doc.id,
-                  name: data.name || 'N/A',
-                  email: data.email,
-                  whatsapp: data.whatsapp,
-                  role: data.role,
-                  // Status would likely come from another field in your Firestore doc
-                  status: 'active',
-                } as UserData;
-            });
-            setUsers(userList);
-          } catch(error) {
-            console.error("Error fetching users:", error);
-            // Handle error (e.g., show a toast message)
-          } finally {
-            setIsLoadingUsers(false);
-          }
-        };
-        fetchUsers();
-      }
+    // Wait for the authentication state to be resolved
+    if (authLoading) {
+      return;
     }
-  }, [user, userProfile, loading, router]);
+
+    // If no user is logged in, deny access immediately
+    if (!user) {
+      setAccessDenied(true);
+      setIsLoadingUsers(false);
+      return;
+    }
+    
+    // If the user profile is loaded and the user is not an admin, deny access
+    if (userProfile && userProfile.role !== 'admin') {
+      setAccessDenied(true);
+      setIsLoadingUsers(false);
+      return;
+    }
+    
+    // If the user profile is loaded and the user is an admin, fetch the users
+    if (userProfile && userProfile.role === 'admin') {
+      setAccessDenied(false);
+      const fetchUsers = async () => {
+        setIsLoadingUsers(true);
+        try {
+          const usersCollection = collection(db, 'users');
+          const userSnapshot = await getDocs(usersCollection);
+          const userList = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                name: data.name || 'N/A',
+                email: data.email,
+                whatsapp: data.whatsapp,
+                role: data.role,
+                status: 'active',
+              } as UserData;
+          });
+          setUsers(userList);
+        } catch(error) {
+          console.error("Error fetching users:", error);
+          // This might indicate a Firestore rules issue
+          setAccessDenied(true); 
+        } finally {
+          setIsLoadingUsers(false);
+        }
+      };
+      fetchUsers();
+    }
+
+  }, [user, userProfile, authLoading, router]);
 
 
-  if (loading || (userProfile?.role === 'admin' && isLoadingUsers)) {
+  if (authLoading || isLoadingUsers) {
     return (
         <div className="container mx-auto">
             <header className="mb-6">
@@ -100,7 +119,7 @@ export default function AdminPage() {
     );
   }
   
-  if (!user || userProfile?.role !== 'admin') {
+  if (accessDenied) {
      return (
       <div className="container mx-auto">
         <Alert variant="destructive" className="max-w-md mx-auto">
@@ -122,13 +141,7 @@ export default function AdminPage() {
           Gerencie usuários e configurações do sistema.
         </p>
       </header>
-      {isLoadingUsers ? (
-         <p>Carregando usuários...</p>
-      ) : (
-        <AdminPanel users={users} />
-      )}
+      <AdminPanel users={users} />
     </div>
   );
 }
-
-    

@@ -29,62 +29,71 @@ export default function AdminPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
-    // Wait for the authentication state to be resolved
-    if (authLoading) {
+    // Don't do anything until auth is resolved and we haven't fetched yet
+    if (authLoading || hasFetched) {
       return;
     }
 
-    // If no user is logged in, deny access immediately
-    if (!user) {
+    // Auth is done, but there's no user or profile.
+    if (!user || !userProfile) {
+       // If auth is done and still no user, deny access.
+       if(!authLoading && !user) {
+         setAccessDenied(true);
+         setIsLoadingUsers(false);
+         setHasFetched(true);
+       }
+       // Otherwise, we might still be waiting for the profile to load, so just wait.
+       return;
+    }
+
+    // At this point, auth is loaded, we have a user and a profile.
+    // We can now check permissions and fetch data.
+    
+    if (userProfile.role !== 'admin') {
       setAccessDenied(true);
       setIsLoadingUsers(false);
+      setHasFetched(true);
       return;
     }
-    
-    // If the user profile is loaded and the user is not an admin, deny access
-    if (userProfile && userProfile.role !== 'admin') {
-      setAccessDenied(true);
-      setIsLoadingUsers(false);
-      return;
-    }
-    
-    // If the user profile is loaded and the user is an admin, fetch the users
-    if (userProfile && userProfile.role === 'admin') {
+
+    // User is an admin, let's fetch the users.
+    const fetchUsers = async () => {
+      setIsLoadingUsers(true);
       setAccessDenied(false);
-      const fetchUsers = async () => {
-        setIsLoadingUsers(true);
-        try {
-          const usersCollection = collection(db, 'users');
-          const userSnapshot = await getDocs(usersCollection);
-          const userList = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                name: data.name || 'N/A',
-                email: data.email,
-                whatsapp: data.whatsapp,
-                role: data.role,
-                status: 'active',
-              } as UserData;
-          });
-          setUsers(userList);
-        } catch(error) {
-          console.error("Error fetching users:", error);
-          // This might indicate a Firestore rules issue
-          setAccessDenied(true); 
-        } finally {
-          setIsLoadingUsers(false);
-        }
-      };
-      fetchUsers();
-    }
+      try {
+        const usersCollection = collection(db, 'users');
+        const userSnapshot = await getDocs(usersCollection);
+        const userList = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              name: data.name || 'N/A',
+              email: data.email,
+              whatsapp: data.whatsapp,
+              role: data.role,
+              status: 'active',
+            } as UserData;
+        });
+        setUsers(userList);
+      } catch(error) {
+        console.error("Error fetching users:", error);
+        // This likely indicates a Firestore rules issue if it happens now.
+        setAccessDenied(true); 
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
 
-  }, [user, userProfile, authLoading, router]);
+    fetchUsers();
+    setHasFetched(true); // Mark as fetched to prevent re-fetching
+
+  }, [user, userProfile, authLoading, router, hasFetched]);
 
 
-  if (authLoading || isLoadingUsers) {
+  if (authLoading || (isLoadingUsers && !accessDenied)) {
     return (
         <div className="container mx-auto">
             <header className="mb-6">

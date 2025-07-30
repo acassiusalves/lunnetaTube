@@ -17,6 +17,7 @@ const AnalyzeCommentsInputSchema = z.object({
     .string()
     .describe('The comments to analyze. Provide all comments as one string.'),
   prompt: z.string().optional().describe('A custom prompt for the analysis.'),
+  model: z.string().optional().describe('The model to use for the analysis.'),
 });
 export type AnalyzeCommentsInput = z.infer<typeof AnalyzeCommentsInputSchema>;
 
@@ -37,7 +38,7 @@ const analyzeCommentsFlow = ai.defineFlow(
     inputSchema: AnalyzeCommentsInputSchema,
     outputSchema: AnalyzeCommentsOutputSchema,
   },
-  async ({ comments, prompt: customPrompt }) => {
+  async ({ comments, prompt: customPrompt, model }) => {
     
     // Determine the prompt to use. If a custom prompt is provided, use it. Otherwise, use the default.
     const basePrompt = customPrompt || defaultPromptText;
@@ -47,7 +48,7 @@ const analyzeCommentsFlow = ai.defineFlow(
 
     const {output} = await ai.generate({
       prompt: `${finalPrompt}\n\nComments:\n${comments}`,
-      model: 'googleai/gemini-1.5-flash',
+      model: model || 'googleai/gemini-1.5-flash',
       output: { 
           schema: AnalyzeCommentsOutputSchema,
       },
@@ -59,4 +60,3 @@ const analyzeCommentsFlow = ai.defineFlow(
     return output!;
   }
 );
-

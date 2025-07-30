@@ -16,16 +16,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Save, CheckCircle, XCircle } from "lucide-react";
+import { Save, CheckCircle, XCircle, Bot } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const API_KEY_STORAGE_ITEM = "youtube_api_key";
 const COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM = "comment_analysis_prompt";
+const AI_MODEL_STORAGE_ITEM = "ai_model";
 
 export default function SettingsPage() {
   const { toast } = useToast();
   const [apiKey, setApiKey] = useState("");
   const [commentAnalysisPrompt, setCommentAnalysisPrompt] = useState("");
+  const [aiModel, setAiModel] = useState("googleai/gemini-1.5-flash");
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
@@ -38,22 +41,13 @@ export default function SettingsPage() {
     if (savedPrompt) {
       setCommentAnalysisPrompt(savedPrompt);
     }
+    const savedModel = localStorage.getItem(AI_MODEL_STORAGE_ITEM);
+    if (savedModel) {
+      setAiModel(savedModel);
+    }
   }, []);
 
-  const handleSavePrompt = () => {
-     if (commentAnalysisPrompt) {
-        localStorage.setItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM, commentAnalysisPrompt);
-    } else {
-        localStorage.removeItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM);
-    }
-     toast({
-        title: "Prompt Salvo",
-        description: "Seu prompt personalizado foi salvo com sucesso.",
-    });
-  }
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSaveSettings = () => {
     // Save API Key
     if (apiKey) {
       localStorage.setItem(API_KEY_STORAGE_ITEM, apiKey);
@@ -64,12 +58,24 @@ export default function SettingsPage() {
     }
     
     // Save Comment Analysis Prompt
-    handleSavePrompt();
+     if (commentAnalysisPrompt) {
+        localStorage.setItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM, commentAnalysisPrompt);
+    } else {
+        localStorage.removeItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM);
+    }
+
+    // Save AI Model
+    localStorage.setItem(AI_MODEL_STORAGE_ITEM, aiModel);
 
     toast({
         title: "Configurações Salvas",
         description: "Suas configurações foram atualizadas com sucesso.",
     });
+  }
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleSaveSettings();
   };
 
   return (
@@ -133,6 +139,36 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+        
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Bot />
+                    Modelo de IA
+                </CardTitle>
+                <CardDescription>
+                    Escolha o modelo de inteligência artificial para realizar as análises. O modelo Pro é mais poderoso, mas pode ser mais lento.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-2">
+                    <Label htmlFor="ai-model">Modelo de Análise</Label>
+                    <Select value={aiModel} onValueChange={setAiModel}>
+                        <SelectTrigger id="ai-model">
+                            <SelectValue placeholder="Selecione um modelo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="googleai/gemini-1.5-flash">
+                                Gemini 1.5 Flash (Rápido e eficiente)
+                            </SelectItem>
+                             <SelectItem value="googleai/gemini-1.5-pro">
+                                Gemini 1.5 Pro (Mais poderoso)
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -155,9 +191,9 @@ export default function SettingsPage() {
             </div>
           </CardContent>
            <CardFooter className="justify-end">
-            <Button type="button" onClick={handleSavePrompt}>
+            <Button type="button" onClick={handleSaveSettings}>
                 <Save className="mr-2 h-4 w-4" />
-                Salvar Prompt
+                Salvar Configurações
             </Button>
           </CardFooter>
         </Card>

@@ -20,6 +20,7 @@ import { AnalysisViewer } from '@/components/analysis-viewer';
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
 const COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM = 'comment_analysis_prompt';
+const AI_MODEL_STORAGE_ITEM = 'ai_model';
 
 
 function formatNumber(num: number) {
@@ -45,6 +46,7 @@ export default function AnalyzeVideoPage() {
   
   const apiKey = typeof window !== 'undefined' ? localStorage.getItem(API_KEY_STORAGE_ITEM) : null;
   const customPrompt = typeof window !== 'undefined' ? localStorage.getItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM) : null;
+  const aiModel = typeof window !== 'undefined' ? localStorage.getItem(AI_MODEL_STORAGE_ITEM) : null;
 
   useEffect(() => {
     if (!videoId || !apiKey) {
@@ -134,7 +136,8 @@ export default function AnalyzeVideoPage() {
         const allCommentsText = comments.map(c => c.text).join('\n\n---\n\n');
         const result = await analyzeComments({ 
             comments: allCommentsText,
-            ...(customPrompt && { prompt: customPrompt })
+            ...(customPrompt && { prompt: customPrompt }),
+            ...(aiModel && { model: aiModel }),
         });
         setAnalysis(result);
 
@@ -148,7 +151,7 @@ export default function AnalyzeVideoPage() {
         }
 
     } catch(e: any) {
-        toast({ title: "Erro na Análise", description: e.message, variant: "destructive" });
+        toast({ title: "Erro na Análise", description: e.message || "Ocorreu um erro inesperado durante a análise.", variant: "destructive" });
     } finally {
         setIsAnalyzing(false);
     }

@@ -30,27 +30,34 @@ export default function AdminPage() {
     if (!loading) {
       // Redirect if not logged in or not an admin
       if (!user || userProfile?.role !== 'admin') {
-        router.push('/');
+        // Allow access for a moment to show the access denied message, then redirect if needed
+        // router.push('/'); 
       } else {
         // Fetch users from Firestore
         const fetchUsers = async () => {
           setIsLoadingUsers(true);
-          const usersCollection = collection(db, 'users');
-          const userSnapshot = await getDocs(usersCollection);
-          const userList = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                name: data.name || 'N/A',
-                email: data.email,
-                whatsapp: data.whatsapp,
-                role: data.role,
-                // Status would likely come from another field in your Firestore doc
-                status: 'active',
-              } as UserData;
-          });
-          setUsers(userList);
-          setIsLoadingUsers(false);
+          try {
+            const usersCollection = collection(db, 'users');
+            const userSnapshot = await getDocs(usersCollection);
+            const userList = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
+                const data = doc.data();
+                return {
+                  id: doc.id,
+                  name: data.name || 'N/A',
+                  email: data.email,
+                  whatsapp: data.whatsapp,
+                  role: data.role,
+                  // Status would likely come from another field in your Firestore doc
+                  status: 'active',
+                } as UserData;
+            });
+            setUsers(userList);
+          } catch(error) {
+            console.error("Error fetching users:", error);
+            // Handle error (e.g., show a toast message)
+          } finally {
+            setIsLoadingUsers(false);
+          }
         };
         fetchUsers();
       }
@@ -58,22 +65,45 @@ export default function AdminPage() {
   }, [user, userProfile, loading, router]);
 
 
-  if (loading || isLoadingUsers) {
+  if (loading || (userProfile?.role === 'admin' && isLoadingUsers)) {
     return (
         <div className="container mx-auto">
             <header className="mb-6">
-                <Skeleton className="h-9 w-64" />
-                <Skeleton className="mt-2 h-5 w-80" />
+                <h1 className="text-3xl font-bold tracking-tight">Painel do Administrador</h1>
+                <p className="text-muted-foreground">
+                  Gerencie usuários e configurações do sistema.
+                </p>
             </header>
-            <Skeleton className="h-96 w-full" />
+            <Card>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead><Skeleton className="h-5 w-32" /></TableHead>
+                            <TableHead><Skeleton className="h-5 w-24" /></TableHead>
+                            <TableHead><Skeleton className="h-5 w-16" /></TableHead>
+                            <TableHead><span className="sr-only">Ações</span></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {[...Array(5)].map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </Card>
         </div>
     );
   }
   
-  if (userProfile?.role !== 'admin') {
+  if (!user || userProfile?.role !== 'admin') {
      return (
       <div className="container mx-auto">
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="max-w-md mx-auto">
           <Shield className="h-4 w-4" />
           <AlertTitle>Acesso Negado</AlertTitle>
           <AlertDescription>
@@ -92,7 +122,13 @@ export default function AdminPage() {
           Gerencie usuários e configurações do sistema.
         </p>
       </header>
-      <AdminPanel users={users} />
+      {isLoadingUsers ? (
+         <p>Carregando usuários...</p>
+      ) : (
+        <AdminPanel users={users} />
+      )}
     </div>
   );
 }
+
+    

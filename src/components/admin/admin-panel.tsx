@@ -33,7 +33,7 @@ export function AdminPanel({ users }: AdminPanelProps) {
           <TableRow>
             <TableHead>Email</TableHead>
             <TableHead>WhatsApp</TableHead>
-            <TableHead>Role</TableHead>
+            <TableHead>Função</TableHead>
             <TableHead>
               <span className="sr-only">Ações</span>
             </TableHead>
@@ -45,11 +45,11 @@ export function AdminPanel({ users }: AdminPanelProps) {
               <TableCell className="font-medium">{user.email}</TableCell>
               <TableCell>{user.whatsapp}</TableCell>
               <TableCell>
-                <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
+                <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
                     {user.role}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -59,7 +59,7 @@ export function AdminPanel({ users }: AdminPanelProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem>Editar</DropdownMenuItem>
-                    <DropdownMenuItem>Excluir</DropdownMenuItem>
+                    <DropdownMenuItem className="text-red-600">Excluir</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -70,3 +70,5 @@ export function AdminPanel({ users }: AdminPanelProps) {
     </Card>
   );
 }
+
+    

@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -31,16 +32,9 @@ export async function analyzeComments(input: AnalyzeCommentsInput): Promise<Anal
   return analyzeCommentsFlow(input);
 }
 
-const defaultPrompt = ai.definePrompt({
-  name: 'analyzeCommentsPrompt',
-  input: {schema: z.object({ comments: z.string() })},
-  output: {schema: AnalyzeCommentsOutputSchema},
-  prompt: `You are an AI assistant that analyzes video comments to understand the overall sentiment and identify key themes. You will be provided with a string containing all comments. Analyze the comments and determine the overall sentiment, key themes, and provide a summary.
+const defaultPromptText = `You are an AI assistant that analyzes video comments to understand the overall sentiment and identify key themes. You will be provided with a string containing all comments. Analyze the comments and determine the overall sentiment, key themes, and provide a summary.
 
-Your response must be in Brazilian Portuguese.
-
-Comments: {{{comments}}}`,
-});
+Your response must be in Brazilian Portuguese.`;
 
 const analyzeCommentsFlow = ai.defineFlow(
   {
@@ -49,20 +43,20 @@ const analyzeCommentsFlow = ai.defineFlow(
     outputSchema: AnalyzeCommentsOutputSchema,
   },
   async ({ comments, prompt: customPrompt }) => {
-    if (customPrompt) {
-      const {output} = await generate({
-        prompt: `${customPrompt}\n\nComments:\n{{{comments}}}`,
-        input: { comments },
-        model: ai.model,
-        output: { schema: AnalyzeCommentsOutputSchema },
-        config: {
-            temperature: 0.5,
-        }
-      });
-      return output!;
-    }
+    
+    const promptToUse = customPrompt 
+      ? `${customPrompt}\n\nSua resposta deve estar em Português do Brasil.`
+      : defaultPromptText;
 
-    const {output} = await defaultPrompt({ comments });
+    const {output} = await generate({
+      prompt: `${promptToUse}\n\nComments:\n${comments}`,
+      model: ai.model,
+      output: { schema: AnalyzeCommentsOutputSchema },
+      config: {
+          temperature: 0.5,
+      }
+    });
+
     return output!;
   }
 );

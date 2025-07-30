@@ -19,53 +19,20 @@ import {
 import { Button } from '../ui/button';
 import { MoreHorizontal } from 'lucide-react';
 import { Card } from '../ui/card';
+import type { UserData } from '@/app/admin/page';
 
-// Mock data for users - in a real app, this would come from your database
-const users = [
-  {
-    id: '1',
-    name: 'Acassius Alves',
-    email: 'acassiusalves@gmail.com',
-    whatsapp: '+5511987654321',
-    role: 'admin',
-    status: 'active',
-  },
-  {
-    id: '2',
-    name: 'Maria Silva',
-    email: 'maria.silva@example.com',
-    whatsapp: '+5521912345678',
-    role: 'user',
-    status: 'active',
-  },
-  {
-    id: '3',
-    name: 'João Pereira',
-    email: 'joao.p@example.com',
-    whatsapp: '+5531998761234',
-    role: 'user',
-    status: 'inactive',
-  },
-  {
-    id: '4',
-    name: 'Ana Costa',
-    email: 'ana.costa@example.com',
-    whatsapp: '+5551987659876',
-    role: 'user',
-    status: 'active',
-  },
-];
+interface AdminPanelProps {
+    users: UserData[];
+}
 
-export function AdminPanel() {
+export function AdminPanel({ users }: AdminPanelProps) {
   return (
     <Card>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nome</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>WhatsApp</TableHead>
-            <TableHead>Status</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>
               <span className="sr-only">Ações</span>
@@ -75,14 +42,8 @@ export function AdminPanel() {
         <TableBody>
           {users.map((user) => (
             <TableRow key={user.id}>
-              <TableCell className="font-medium">{user.name}</TableCell>
-              <TableCell>{user.email}</TableCell>
+              <TableCell className="font-medium">{user.email}</TableCell>
               <TableCell>{user.whatsapp}</TableCell>
-              <TableCell>
-                <Badge variant={user.status === 'active' ? 'secondary' : 'destructive'}>
-                  {user.status === 'active' ? 'Ativo' : 'Inativo'}
-                </Badge>
-              </TableCell>
               <TableCell>
                 <Badge variant={user.role === 'admin' ? 'default' : 'outline'}>
                     {user.role}

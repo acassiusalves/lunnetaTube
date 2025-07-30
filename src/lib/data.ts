@@ -1,4 +1,5 @@
 
+
 export const countries = [
   { value: 'br', label: 'Brasil' },
   { value: 'us', label: 'Estados Unidos' },
@@ -26,6 +27,16 @@ export const categories = [
   { value: '27', label: 'Educação' },
   { value: '28', label: 'Ciência e Tecnologia' },
 ];
+
+export interface SearchParams {
+  type: 'keyword' | 'trending';
+  keyword?: string;
+  country?: string;
+  minViews?: number;
+  excludeShorts?: boolean;
+  category?: string;
+  pageToken?: string;
+}
 
 export interface Video {
   id: string;

@@ -46,7 +46,6 @@ export interface SortConfig {
 }
 interface VideoTableProps {
   videos: Video[];
-  onAnalyze: (video: Video, type: "content") => void;
   onFetchComments: (videoId: string) => void;
   isLoadingComments: boolean;
   sortConfig: SortConfig;
@@ -104,7 +103,6 @@ const TruncatedText = ({ text, maxLength, asLink, href }: { text: string; maxLen
 
 export function VideoTable({
   videos,
-  onAnalyze,
   onFetchComments,
   isLoadingComments,
   sortConfig,
@@ -260,9 +258,9 @@ export function VideoTable({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                        <DropdownMenuItem asChild>
-                         <Link href={`/analyze/${video.id}`}>
+                         <Link href={`/analyze/${video.id}`} className="cursor-pointer">
                             <Sparkles className="mr-2 h-4 w-4" />
-                            Analisar Conteúdo
+                            <span>Analisar Vídeo</span>
                         </Link>
                       </DropdownMenuItem>
                     </DropdownMenuContent>

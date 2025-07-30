@@ -3,35 +3,43 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { VideoSearchTabs, type SearchParams } from "@/components/dashboard/video-search-tabs";
-import { AnalysisDialog } from "@/components/dashboard/analysis-dialog";
 import { Video, mapApiToVideo, CommentData } from "@/lib/data";
 import { VideoTable, type SortConfig } from "@/components/dashboard/video-table";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search, Terminal } from "lucide-react";
 import { searchYoutubeVideos } from "@/ai/flows/youtube-search";
 import { fetchTopComments } from "@/ai/flows/fetch-comments";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useSearch } from "@/context/SearchContext";
+import type { SearchParams } from "@/lib/data";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { countries } from "@/lib/data";
 
-type AnalysisType = "content";
 const API_KEY_STORAGE_ITEM = "youtube_api_key";
 
 export default function DashboardPage() {
   const { toast } = useToast();
-  const {
-    searchState,
-    setSearchState,
-    clearSearchState,
-  } = useSearch();
+  const { searchState, setSearchState, clearSearchState } = useSearch();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-  const [analysisType, setAnalysisType] = useState<AnalysisType>("content");
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'views', direction: 'descending' });
     
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -39,6 +47,12 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   const mainContainerRef = useRef<HTMLDivElement>(null);
+
+  // Form state for keyword search
+  const [keyword, setKeyword] = useState(searchState.searchParams?.keyword || '');
+  const [country, setCountry] = useState(searchState.searchParams?.country || 'br');
+  const [minViews, setMinViews] = useState(String(searchState.searchParams?.minViews || 100000));
+  const [excludeShorts, setExcludeShorts] = useState(searchState.searchParams?.excludeShorts || false);
 
   // Restore scroll position on mount
   useEffect(() => {
@@ -97,6 +111,19 @@ export default function DashboardPage() {
     }
   };
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params: SearchParams = {
+        type: 'keyword',
+        keyword: keyword,
+        country: country,
+        minViews: parseInt(minViews, 10) || 100000,
+        excludeShorts: excludeShorts,
+    };
+    handleSearch(params);
+  };
+
+
   const handleLoadMore = async () => {
     if (!searchState.nextPageToken || !searchState.searchParams) return;
 
@@ -126,12 +153,6 @@ export default function DashboardPage() {
     } finally {
       setIsLoadingMore(false);
     }
-  };
-
-  const handleOpenDialog = (video: Video, type: AnalysisType) => {
-    setSelectedVideo(video);
-    setAnalysisType(type);
-    setIsDialogOpen(true);
   };
 
   const handleSort = (key: keyof Video) => {
@@ -213,13 +234,80 @@ export default function DashboardPage() {
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full overflow-y-auto" ref={mainContainerRef}>
       <div className="space-y-4">
         <header>
-          <h1 className="text-3xl font-bold tracking-tight">Analisador de Mercado</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Painel de Análise</h1>
           <p className="text-muted-foreground">
             Descubra insights de vídeos do YouTube para impulsionar sua próxima grande ideia.
           </p>
         </header>
 
-        <VideoSearchTabs onSearch={handleSearch} isLoading={isLoading} initialParams={searchState.searchParams} />
+        <Card>
+          <CardHeader>
+            <CardTitle>Pesquisa por Palavra-chave</CardTitle>
+            <CardDescription>
+              Encontre vídeos com base em palavras-chave e filtros específicos.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleFormSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="keyword">Palavra-chave</Label>
+                  <Input 
+                    id="keyword" 
+                    placeholder="ex: 'ferramentas de gestão de produtos'" 
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="country">País</Label>
+                  <Select value={country} onValueChange={setCountry}>
+                    <SelectTrigger id="country">
+                      <SelectValue placeholder="Selecione um país" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {countries.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="views">Mínimo de Visualizações</Label>
+                  <Input 
+                    id="views" 
+                    type="number" 
+                    placeholder="ex: 100000" 
+                    value={minViews}
+                    onChange={(e) => setMinViews(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="exclude-shorts-keyword" 
+                    checked={excludeShorts} 
+                    onCheckedChange={(checked) => setExcludeShorts(checked as boolean)} 
+                  />
+                  <Label htmlFor="exclude-shorts-keyword" className="text-sm font-normal">
+                    Excluir Shorts
+                  </Label>
+                </div>
+                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
+                  {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="mr-2 h-4 w-4" />
+                  )}
+                  Pesquisar
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
 
         {error && (
             <Alert variant="destructive">
@@ -241,15 +329,20 @@ export default function DashboardPage() {
                   <Skeleton className="h-16 w-full rounded-xl" />
                 </div>
               </div>
-          ) : (
+          ) : searchState.videos.length > 0 ? (
             <VideoTable 
               videos={sortedVideos} 
-              onAnalyze={handleOpenDialog}
               onFetchComments={handleFetchComments}
               isLoadingComments={isLoadingComments}
               sortConfig={sortConfig}
               onSort={handleSort}
             />
+          ) : (
+            !isLoading && !error && (
+              <div className="flex items-center justify-center rounded-lg bg-card p-12 text-center text-muted-foreground">
+                  <p>Use a busca acima para encontrar vídeos para analisar.</p>
+              </div>
+            )
           )}
           </TooltipProvider>
         </div>
@@ -268,15 +361,6 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-      
-      {selectedVideo && (
-        <AnalysisDialog
-          isOpen={isDialogOpen}
-          setIsOpen={setIsDialogOpen}
-          video={selectedVideo}
-          analysisType={analysisType}
-        />
-      )}
     </div>
   );
 }

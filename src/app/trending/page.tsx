@@ -14,7 +14,6 @@ import { Video, mapApiToVideo } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { VideoTable, type SortConfig } from '@/components/dashboard/video-table';
-import { AnalysisDialog } from '@/components/dashboard/analysis-dialog';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
@@ -33,8 +32,12 @@ export default function TrendingPage() {
   const [excludeShorts, setExcludeShorts] = useState(true);
 
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'views', direction: 'descending' });
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  
+  // onFetchComments and isLoadingComments are not used for trending page for now
+  // as the focus is on discovery.
+  const handleFetchComments = async (videoId: string) => { return; };
+  const isLoadingComments = false;
+
 
   const getSearchParams = (pageToken?: string) => ({
     type: 'trending' as const,
@@ -98,16 +101,6 @@ export default function TrendingPage() {
     return 0;
   });
 
-  const handleOpenDialog = (video: Video) => {
-    setSelectedVideo(video);
-    setIsDialogOpen(true);
-  };
-  
-  // onFetchComments and isLoadingComments are not used for trending page for now
-  // as the focus is on discovery.
-  const handleFetchComments = async (videoId: string) => { return; };
-  const isLoadingComments = false;
-
 
   return (
     <div className="container mx-auto max-w-7xl">
@@ -162,7 +155,7 @@ export default function TrendingPage() {
                   <Checkbox id="exclude-shorts-trending" checked={excludeShorts} onCheckedChange={(c) => setExcludeShorts(c as boolean)} />
                   <Label htmlFor="exclude-shorts-trending" className="text-sm font-normal">Excluir Shorts</Label>
                 </div>
-                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto bg-accent hover:bg-accent/90">
+                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
                   {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
                   Buscar Tendências
                 </Button>
@@ -183,7 +176,6 @@ export default function TrendingPage() {
             <TooltipProvider>
                 <VideoTable 
                     videos={sortedVideos} 
-                    onAnalyze={(video) => handleOpenDialog(video)}
                     onFetchComments={handleFetchComments}
                     isLoadingComments={isLoadingComments}
                     sortConfig={sortConfig}
@@ -207,15 +199,6 @@ export default function TrendingPage() {
           </div>
         )}
       </div>
-
-       {selectedVideo && (
-        <AnalysisDialog
-          isOpen={isDialogOpen}
-          setIsOpen={setIsDialogOpen}
-          video={selectedVideo}
-          analysisType="content"
-        />
-      )}
     </div>
   );
 }

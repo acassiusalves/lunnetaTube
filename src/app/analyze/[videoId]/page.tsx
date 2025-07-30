@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Video, mapApiToVideo, CommentData } from '@/lib/data';
+import { AnalysisViewer } from '@/components/analysis-viewer';
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
 const COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM = 'comment_analysis_prompt';
@@ -33,6 +34,8 @@ export default function AnalyzeVideoPage() {
   const [comments, setComments] = useState<CommentData[]>([]);
   const [commentNextPageToken, setCommentNextPageToken] = useState<string | undefined | null>(null);
   const [analysis, setAnalysis] = useState<AnalyzeCommentsOutput | null>(null);
+  const [parsedAnalysis, setParsedAnalysis] = useState<any>(null);
+
 
   const [isLoadingVideo, setIsLoadingVideo] = useState(true);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
@@ -53,21 +56,30 @@ export default function AnalyzeVideoPage() {
     async function fetchVideoDetails() {
       setIsLoadingVideo(true);
       try {
+        // This is a temporary solution to fetch a single video by its ID.
+        // The YouTube API's `search.list` is not ideal for this. 
+        // A direct `videos.list` call with the ID would be more efficient.
         const result = await searchYoutubeVideos({
           apiKey: apiKey!,
-          type: 'keyword', // Not ideal, but the API needs a type. We search by ID.
-          keyword: videoId as string, // This will return the video if we search its ID.
+          type: 'keyword', 
+          keyword: `https://www.youtube.com/watch?v=${videoId}`,
         });
         
-        // This is a bit of a hack since the search API isn't designed for direct ID lookups.
-        // A better approach would be a dedicated `videos.list` call.
         const foundVideo = result.videos?.find((v: any) => v.id === videoId);
 
         if (foundVideo) {
           setVideo(mapApiToVideo(foundVideo));
           loadComments(true); // Initial load
         } else {
-          setError('Vídeo não encontrado.');
+           // Fallback to videos.list if search fails
+           const detailsResponse = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet,statistics,contentDetails&key=${apiKey}`);
+           const detailsData = await detailsResponse.json();
+           if (detailsData.items && detailsData.items.length > 0) {
+                setVideo(mapApiToVideo(detailsData.items[0]));
+                loadComments(true);
+           } else {
+                setError('Vídeo não encontrado.');
+           }
         }
       } catch (e: any) {
         setError(e.message || 'Erro ao buscar detalhes do vídeo.');
@@ -117,6 +129,7 @@ export default function AnalyzeVideoPage() {
     }
     setIsAnalyzing(true);
     setAnalysis(null);
+    setParsedAnalysis(null);
     try {
         const allCommentsText = comments.map(c => c.text).join('\n\n---\n\n');
         const result = await analyzeComments({ 
@@ -124,6 +137,16 @@ export default function AnalyzeVideoPage() {
             ...(customPrompt && { prompt: customPrompt })
         });
         setAnalysis(result);
+
+         // Attempt to parse the analysis as JSON
+         try {
+            const jsonAnalysis = JSON.parse(result.analysis);
+            setParsedAnalysis(jsonAnalysis);
+        } catch (e) {
+            // If it's not JSON, it will be rendered as plain text
+            setParsedAnalysis(null);
+        }
+
     } catch(e: any) {
         toast({ title: "Erro na Análise", description: e.message, variant: "destructive" });
     } finally {
@@ -213,10 +236,12 @@ export default function AnalyzeVideoPage() {
 
                     {analysis && (
                         <div className="mt-6 space-y-4 text-sm">
-                            <div>
-                                <h4 className="font-semibold">Análise de Comentários</h4>
+                            <h4 className="font-semibold">Análise de Comentários</h4>
+                           {parsedAnalysis ? (
+                                <AnalysisViewer data={parsedAnalysis} />
+                            ) : (
                                 <p className="text-muted-foreground whitespace-pre-wrap">{analysis.analysis}</p>
-                            </div>
+                            )}
                         </div>
                     )}
                 </CardContent>

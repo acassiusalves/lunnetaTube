@@ -10,7 +10,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import { generate } from 'genkit';
 import {z} from 'genkit';
 
 const AnalyzeCommentsInputSchema = z.object({
@@ -48,7 +47,7 @@ const analyzeCommentsFlow = ai.defineFlow(
       ? `${customPrompt}\n\nSua resposta deve estar em Português do Brasil.`
       : defaultPromptText;
 
-    const {output} = await generate({
+    const {output} = await ai.generate({
       prompt: `${promptToUse}\n\nComments:\n${comments}`,
       model: ai.model,
       output: { schema: AnalyzeCommentsOutputSchema },

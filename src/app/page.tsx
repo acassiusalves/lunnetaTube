@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoSearchTabs, type SearchParams } from "@/components/dashboard/video-search-tabs";
 import { AnalysisDialog } from "@/components/dashboard/analysis-dialog";
@@ -15,33 +15,59 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useSearch } from "@/context/SearchContext";
 
 type AnalysisType = "content";
 const API_KEY_STORAGE_ITEM = "youtube_api_key";
 
 export default function DashboardPage() {
   const { toast } = useToast();
+  const {
+    searchState,
+    setSearchState,
+    clearSearchState,
+  } = useSearch();
+
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [analysisType, setAnalysisType] = useState<AnalysisType>("content");
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'views', direction: 'descending' });
-  
-  const [allVideos, setAllVideos] = useState<Video[]>([]);
-  const [displayedVideos, setDisplayedVideos] = useState<Video[]>([]);
-  const [nextPageToken, setNextPageToken] = useState<string | undefined>(undefined);
-  const [currentSearch, setCurrentSearch] = useState<SearchParams | null>(null);
-  
+    
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const mainContainerRef = useRef<HTMLDivElement>(null);
+
+  // Restore scroll position on mount
+  useEffect(() => {
+    if (mainContainerRef.current && searchState.scrollPosition > 0) {
+      mainContainerRef.current.scrollTop = searchState.scrollPosition;
+    }
+  }, []);
+
+  // Save scroll position on unmount
+  useEffect(() => {
+    const handleScroll = () => {
+      if (mainContainerRef.current) {
+        setSearchState(prev => ({ ...prev, scrollPosition: mainContainerRef.current!.scrollTop }));
+      }
+    };
+    
+    const currentRef = mainContainerRef.current;
+    currentRef?.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      currentRef?.removeEventListener('scroll', handleScroll);
+    };
+  }, [setSearchState]);
+  
+
   const handleSearch = async (params: SearchParams) => {
     setIsLoading(true);
-    setDisplayedVideos([]);
-    setAllVideos([]);
     setError(null);
-    setCurrentSearch(params);
+    clearSearchState();
     
     const apiKey = localStorage.getItem(API_KEY_STORAGE_ITEM);
     if (!apiKey) {
@@ -54,13 +80,15 @@ export default function DashboardPage() {
       const result = await searchYoutubeVideos({ ...params, apiKey });
       if (result.error) {
         setError(result.error);
-        setAllVideos([]);
-        setDisplayedVideos([]);
+        clearSearchState();
       } else {
         const fetchedVideos = result.videos?.map(mapApiToVideo) || [];
-        setAllVideos(fetchedVideos);
-        setDisplayedVideos(fetchedVideos);
-        setNextPageToken(result.nextPageToken);
+        setSearchState({
+            videos: fetchedVideos,
+            searchParams: params,
+            nextPageToken: result.nextPageToken,
+            scrollPosition: 0,
+        });
       }
     } catch (e: any) {
       setError(e.message || "Ocorreu um erro ao buscar os vídeos.");
@@ -70,7 +98,7 @@ export default function DashboardPage() {
   };
 
   const handleLoadMore = async () => {
-    if (!nextPageToken || !currentSearch) return;
+    if (!searchState.nextPageToken || !searchState.searchParams) return;
 
     setIsLoadingMore(true);
     setError(null);
@@ -82,14 +110,16 @@ export default function DashboardPage() {
     }
 
     try {
-      const result = await searchYoutubeVideos({ ...currentSearch, apiKey, pageToken: nextPageToken });
+      const result = await searchYoutubeVideos({ ...searchState.searchParams, apiKey, pageToken: searchState.nextPageToken });
         if (result.error) {
         setError(result.error);
       } else {
         const newVideos = result.videos?.map(mapApiToVideo) || [];
-        setAllVideos(prev => [...prev, ...newVideos]);
-        setDisplayedVideos(prev => [...prev, ...newVideos]);
-        setNextPageToken(result.nextPageToken);
+        setSearchState(prev => ({
+            ...prev,
+            videos: [...prev.videos, ...newVideos],
+            nextPageToken: result.nextPageToken
+        }));
       }
     } catch (e: any) {
       setError(e.message || "Ocorreu um erro ao buscar os vídeos.");
@@ -113,8 +143,8 @@ export default function DashboardPage() {
   };
   
   const handleFetchComments = async (videoId: string) => {
-    const videoIndex = allVideos.findIndex(v => v.id === videoId);
-    if (videoIndex === -1 || allVideos[videoIndex].commentsData.length > 0) {
+    const videoIndex = searchState.videos.findIndex(v => v.id === videoId);
+    if (videoIndex === -1 || searchState.videos[videoIndex].commentsData.length > 0) {
       return; // Already fetched or video not found
     }
     
@@ -139,10 +169,11 @@ export default function DashboardPage() {
           variant: "destructive"
         });
       } else {
-        const updatedVideos = [...allVideos];
-        updatedVideos[videoIndex].commentsData = result.comments as CommentData[];
-        setAllVideos(updatedVideos);
-        setDisplayedVideos(updatedVideos);
+        setSearchState(prev => {
+            const updatedVideos = [...prev.videos];
+            updatedVideos[videoIndex].commentsData = result.comments as CommentData[];
+            return { ...prev, videos: updatedVideos };
+        });
       }
     } catch (e: any) {
         toast({
@@ -157,7 +188,8 @@ export default function DashboardPage() {
 
 
   const sortedVideos = useMemo(() => {
-    const sortableVideos = [...displayedVideos];
+    if (!searchState.videos) return [];
+    const sortableVideos = [...searchState.videos];
     if (sortConfig.key) {
       sortableVideos.sort((a, b) => {
         const aValue = a[sortConfig.key];
@@ -173,12 +205,12 @@ export default function DashboardPage() {
       });
     }
     return sortableVideos;
-  }, [displayedVideos, sortConfig]);
+  }, [searchState.videos, sortConfig]);
 
-  const canLoadMore = !!nextPageToken;
+  const canLoadMore = !!searchState.nextPageToken;
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full overflow-y-auto" ref={mainContainerRef}>
       <div className="space-y-4">
         <header>
           <h1 className="text-3xl font-bold tracking-tight">Analisador de Mercado</h1>
@@ -187,7 +219,7 @@ export default function DashboardPage() {
           </p>
         </header>
 
-        <VideoSearchTabs onSearch={handleSearch} isLoading={isLoading} />
+        <VideoSearchTabs onSearch={handleSearch} isLoading={isLoading} initialParams={searchState.searchParams} />
 
         {error && (
             <Alert variant="destructive">
@@ -221,7 +253,7 @@ export default function DashboardPage() {
           )}
           </TooltipProvider>
         </div>
-        {displayedVideos.length > 0 && canLoadMore && (
+        {sortedVideos.length > 0 && canLoadMore && (
           <div className="mt-6 flex justify-center">
             <Button
               onClick={handleLoadMore}

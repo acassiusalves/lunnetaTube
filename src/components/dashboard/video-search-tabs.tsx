@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -36,21 +37,40 @@ export interface SearchParams {
 interface VideoSearchTabsProps {
   onSearch: (params: SearchParams) => void;
   isLoading: boolean;
+  initialParams: SearchParams | null;
 }
 
-export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
-  const [activeTab, setActiveTab] = useState('keyword');
+export function VideoSearchTabs({ onSearch, isLoading, initialParams }: VideoSearchTabsProps) {
+  const [activeTab, setActiveTab] = useState(initialParams?.type || 'keyword');
   
   // Refs for keyword search
   const keywordRef = useRef<HTMLInputElement>(null);
-  const countryKeywordRef = useRef<string>("br");
+  const [countryKeyword, setCountryKeyword] = useState(initialParams?.country || "br");
   const minViewsRef = useRef<HTMLInputElement>(null);
-  const excludeShortsKeywordRef = useRef<HTMLButtonElement>(null);
+  const [excludeShortsKeyword, setExcludeShortsKeyword] = useState(initialParams?.excludeShorts || false);
+
 
   // Refs for trending search
-  const categoryTrendingRef = useRef<string>();
-  const countryTrendingRef = useRef<string>("br");
-  const excludeShortsTrendingRef = useRef<HTMLButtonElement>(null);
+  const [categoryTrending, setCategoryTrending] = useState(initialParams?.category);
+  const [countryTrending, setCountryTrending] = useState(initialParams?.country || "br");
+  const [excludeShortsTrending, setExcludeShortsTrending] = useState(initialParams?.excludeShorts || false);
+
+  useEffect(() => {
+    if (initialParams) {
+        setActiveTab(initialParams.type);
+        if (initialParams.type === 'keyword') {
+            if(keywordRef.current) keywordRef.current.value = initialParams.keyword || '';
+            setCountryKeyword(initialParams.country || 'br');
+            if(minViewsRef.current) minViewsRef.current.value = String(initialParams.minViews || 100000);
+            setExcludeShortsKeyword(initialParams.excludeShorts || false);
+        } else {
+            setCategoryTrending(initialParams.category);
+            setCountryTrending(initialParams.country || 'br');
+            setExcludeShortsTrending(initialParams.excludeShorts || false);
+        }
+    }
+  }, [initialParams]);
+
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,23 +80,23 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
       params = {
         ...params,
         keyword: keywordRef.current?.value || '',
-        country: countryKeywordRef.current,
+        country: countryKeyword,
         minViews: minViewsRef.current ? parseInt(minViewsRef.current.value, 10) : 100000,
-        excludeShorts: excludeShortsKeywordRef.current?.getAttribute('data-state') === 'checked',
+        excludeShorts: excludeShortsKeyword,
       };
     } else { // trending
       params = {
         ...params,
-        category: categoryTrendingRef.current,
-        country: countryTrendingRef.current,
-        excludeShorts: excludeShortsTrendingRef.current?.getAttribute('data-state') === 'checked',
+        category: categoryTrending,
+        country: countryTrending,
+        excludeShorts: excludeShortsTrending,
       };
     }
     onSearch(params);
   };
   
   return (
-    <Tabs defaultValue="keyword" onValueChange={setActiveTab}>
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
       <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
         <TabsTrigger value="keyword">Pesquisar por Palavra-chave</TabsTrigger>
         <TabsTrigger value="trending">Vídeos em Alta</TabsTrigger>
@@ -94,11 +114,11 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="keyword">Palavra-chave</Label>
-                  <Input ref={keywordRef} id="keyword" placeholder="ex: 'ferramentas de gestão de produtos'" />
+                  <Input ref={keywordRef} id="keyword" placeholder="ex: 'ferramentas de gestão de produtos'" defaultValue={initialParams?.keyword} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="country">País</Label>
-                  <Select defaultValue="br" onValueChange={(val) => countryKeywordRef.current = val}>
+                  <Select value={countryKeyword} onValueChange={setCountryKeyword}>
                     <SelectTrigger id="country">
                       <SelectValue placeholder="Selecione um país" />
                     </SelectTrigger>
@@ -113,12 +133,12 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="views">Mínimo de Visualizações</Label>
-                  <Input ref={minViewsRef} id="views" type="number" placeholder="ex: 100000" defaultValue={100000} />
+                  <Input ref={minViewsRef} id="views" type="number" placeholder="ex: 100000" defaultValue={initialParams?.minViews || 100000} />
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="exclude-shorts-keyword" ref={excludeShortsKeywordRef} />
+                  <Checkbox id="exclude-shorts-keyword" checked={excludeShortsKeyword} onCheckedChange={(checked) => setExcludeShortsKeyword(checked as boolean)} />
                   <Label htmlFor="exclude-shorts-keyword" className="text-sm font-normal">
                     Excluir Shorts
                   </Label>
@@ -149,7 +169,7 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                  <div className="space-y-2">
                   <Label htmlFor="category">Categoria</Label>
-                  <Select onValueChange={(val) => categoryTrendingRef.current = val}>
+                  <Select value={categoryTrending} onValueChange={setCategoryTrending}>
                     <SelectTrigger id="category">
                       <SelectValue placeholder="Selecione uma categoria" />
                     </SelectTrigger>
@@ -164,7 +184,7 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
                 </div>
                  <div className="space-y-2">
                   <Label htmlFor="country-trending">País</Label>
-                  <Select defaultValue="br" onValueChange={(val) => countryTrendingRef.current = val}>
+                  <Select value={countryTrending} onValueChange={setCountryTrending}>
                     <SelectTrigger id="country-trending">
                       <SelectValue placeholder="Selecione um país" />
                     </SelectTrigger>
@@ -180,7 +200,7 @@ export function VideoSearchTabs({ onSearch, isLoading }: VideoSearchTabsProps) {
               </div>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="exclude-shorts-trending" ref={excludeShortsTrendingRef} />
+                  <Checkbox id="exclude-shorts-trending" checked={excludeShortsTrending} onCheckedChange={(checked) => setExcludeShortsTrending(checked as boolean)} />
                   <Label htmlFor="exclude-shorts-trending" className="text-sm font-normal">
                     Excluir Shorts
                   </Label>

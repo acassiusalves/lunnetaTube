@@ -18,6 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Video, mapApiToVideo, CommentData } from '@/lib/data';
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
+const COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM = 'comment_analysis_prompt';
+
 
 function formatNumber(num: number) {
   return new Intl.NumberFormat('pt-BR', { notation: 'compact' }).format(num);
@@ -39,6 +41,7 @@ export default function AnalyzeVideoPage() {
   const [error, setError] = useState<string | null>(null);
   
   const apiKey = typeof window !== 'undefined' ? localStorage.getItem(API_KEY_STORAGE_ITEM) : null;
+  const customPrompt = typeof window !== 'undefined' ? localStorage.getItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM) : null;
 
   useEffect(() => {
     if (!videoId || !apiKey) {
@@ -116,7 +119,10 @@ export default function AnalyzeVideoPage() {
     setAnalysis(null);
     try {
         const allCommentsText = comments.map(c => c.text).join('\n\n---\n\n');
-        const result = await analyzeComments({ comments: allCommentsText });
+        const result = await analyzeComments({ 
+            comments: allCommentsText,
+            ...(customPrompt && { prompt: customPrompt })
+        });
         setAnalysis(result);
     } catch(e: any) {
         toast({ title: "Erro na Análise", description: e.message, variant: "destructive" });

@@ -9,12 +9,14 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {generate} from 'genkit/generate';
 import {z} from 'genkit';
 
 const AnalyzeCommentsInputSchema = z.object({
   comments: z
     .string()
     .describe('The comments to analyze. Provide all comments as one string.'),
+  prompt: z.string().optional().describe('A custom prompt for the analysis.'),
 });
 export type AnalyzeCommentsInput = z.infer<typeof AnalyzeCommentsInputSchema>;
 
@@ -29,9 +31,9 @@ export async function analyzeComments(input: AnalyzeCommentsInput): Promise<Anal
   return analyzeCommentsFlow(input);
 }
 
-const prompt = ai.definePrompt({
+const defaultPrompt = ai.definePrompt({
   name: 'analyzeCommentsPrompt',
-  input: {schema: AnalyzeCommentsInputSchema},
+  input: {schema: z.object({ comments: z.string() })},
   output: {schema: AnalyzeCommentsOutputSchema},
   prompt: `You are an AI assistant that analyzes video comments to understand the overall sentiment and identify key themes. You will be provided with a string containing all comments. Analyze the comments and determine the overall sentiment, key themes, and provide a summary.
 
@@ -46,8 +48,21 @@ const analyzeCommentsFlow = ai.defineFlow(
     inputSchema: AnalyzeCommentsInputSchema,
     outputSchema: AnalyzeCommentsOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async ({ comments, prompt: customPrompt }) => {
+    if (customPrompt) {
+      const {output} = await generate({
+        prompt: `${customPrompt}\n\nComments:\n{{{comments}}}`,
+        input: { comments },
+        model: ai.model,
+        output: { schema: AnalyzeCommentsOutputSchema },
+        config: {
+            temperature: 0.5,
+        }
+      });
+      return output!;
+    }
+
+    const {output} = await defaultPrompt({ comments });
     return output!;
   }
 );

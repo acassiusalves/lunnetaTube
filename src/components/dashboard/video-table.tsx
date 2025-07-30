@@ -28,9 +28,7 @@ import {
   ArrowDown,
   ArrowUp,
   Clapperboard,
-  ExternalLink,
   MoreVertical,
-  MessagesSquare,
   Sparkles,
   ArrowUpDown,
   ChevronDown,
@@ -261,26 +259,12 @@ export function VideoTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onAnalyze(video, "content")}>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Analisar Conteúdo
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
+                       <DropdownMenuItem asChild>
                          <Link href={`/analyze/${video.id}`}>
-                            <MessagesSquare className="mr-2 h-4 w-4" />
-                            Analisar Comentários
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Analisar Conteúdo
                         </Link>
                       </DropdownMenuItem>
-                      <Link
-                        href={video.videoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <DropdownMenuItem>
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          Abrir no YouTube
-                        </DropdownMenuItem>
-                      </Link>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

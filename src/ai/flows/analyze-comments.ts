@@ -41,8 +41,10 @@ const analyzeCommentsFlow = ai.defineFlow(
   },
   async ({ comments, prompt: customPrompt }) => {
     
-    // Determine the prompt to use and ensure the Portuguese instruction is always added.
+    // Determine the prompt to use. If a custom prompt is provided, use it. Otherwise, use the default.
     const basePrompt = customPrompt || defaultPromptText;
+    
+    // Ensure the Portuguese instruction is always added.
     const finalPrompt = `${basePrompt}\n\nSua resposta deve estar em Português do Brasil.`;
 
     const {output} = await ai.generate({

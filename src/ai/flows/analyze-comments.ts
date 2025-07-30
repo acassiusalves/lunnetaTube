@@ -47,11 +47,9 @@ const analyzeCommentsFlow = ai.defineFlow(
 
     const {output} = await ai.generate({
       prompt: `${finalPrompt}\n\nComments:\n${comments}`,
-      model: ai.model,
+      model: 'googleai/gemini-1.5-flash',
       output: { 
-          schema: z.object({
-              analysis: z.string().describe("The full analysis, formatted exactly as requested in the prompt.")
-          })
+          schema: AnalyzeCommentsOutputSchema,
       },
       config: {
           temperature: 0.5,
@@ -61,3 +59,4 @@ const analyzeCommentsFlow = ai.defineFlow(
     return output!;
   }
 );
+

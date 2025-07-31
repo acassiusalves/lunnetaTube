@@ -270,12 +270,6 @@ export function VideoTable({
                             <Sparkles className="mr-2 h-4 w-4" />
                             <span>Analisar Conteúdo</span>
                        </DropdownMenuItem>
-                       <DropdownMenuItem asChild>
-                         <Link href={`/analyze/${video.id}`} className="cursor-pointer">
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                            <span>Analisar Comentários</span>
-                        </Link>
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

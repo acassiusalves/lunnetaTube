@@ -1,14 +1,14 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { AdminPanel } from '@/components/admin/admin-panel';
 import { collection, getDocs, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Shield, Loader2 } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 
@@ -69,53 +69,55 @@ const AccessDeniedScreen = () => (
 
 
 export default function AdminPage() {
-  const { userProfile, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const [users, setUsers] = useState<UserData[]>([]);
   const [pageState, setPageState] = useState<'loading' | 'denied' | 'success'>('loading');
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const usersCollection = collection(db, 'users');
+      const userSnapshot = await getDocs(usersCollection);
+      const userList = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name || 'N/A',
+          email: data.email,
+          whatsapp: data.whatsapp,
+          role: data.role,
+          status: 'active', // Placeholder
+        } as UserData;
+      });
+      // Filter out the current admin user from the list
+      const filteredList = userList.filter(u => u.id !== user?.uid);
+      setUsers(filteredList);
+      setPageState('success');
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      setPageState('denied');
+    }
+  }, [user]);
   
   useEffect(() => {
-    // Se a autenticação ainda está carregando, continue no estado de loading.
     if (authLoading) {
       setPageState('loading');
       return;
     }
 
-    // Quando a autenticação terminar
-    if (!authLoading) {
-      // Se não houver perfil ou o perfil não for de admin, o acesso é negado.
-      if (userProfile?.role !== 'admin') {
-        setPageState('denied');
-        return;
+    if (!userProfile) {
+      if (!authLoading && !user) {
+         router.push('/login');
       }
-      
-      // Se for admin, busca os usuários.
-      setPageState('loading'); // Mostra o skeleton enquanto busca
-      const fetchUsers = async () => {
-        try {
-          const usersCollection = collection(db, 'users');
-          const userSnapshot = await getDocs(usersCollection);
-          const userList = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
-              const data = doc.data();
-              return {
-                id: doc.id,
-                name: data.name || 'N/A',
-                email: data.email,
-                whatsapp: data.whatsapp,
-                role: data.role,
-                status: 'active', // Placeholder
-              } as UserData;
-          });
-          setUsers(userList);
-          setPageState('success'); // Exibe a tabela
-        } catch(error) {
-          console.error("Error fetching users:", error);
-          // Se houver um erro ao buscar usuários (ex: regras do Firestore), nega o acesso.
-          setPageState('denied'); 
-        }
-      };
-      fetchUsers();
+      setPageState('denied');
+      return;
     }
-  }, [userProfile, authLoading]);
+
+    if (userProfile.role === 'admin') {
+      fetchUsers();
+    } else {
+      setPageState('denied');
+    }
+  }, [user, userProfile, authLoading, fetchUsers]);
 
 
   if (pageState === 'loading') {
@@ -134,7 +136,7 @@ export default function AdminPage() {
           Gerencie usuários e configurações do sistema.
         </p>
       </header>
-      <AdminPanel users={users} />
+      <AdminPanel users={users} onUserUpdate={fetchUsers} />
     </div>
   );
 }

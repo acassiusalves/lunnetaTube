@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -113,22 +114,28 @@ const searchYoutubeVideosFlow = ai.defineFlow(
 
         // AI-powered analysis for keyword search
         if (input.type === 'keyword' && input.keyword && videoItems.length > 0) {
-            const videosForAnalysis = videoItems.map(v => ({
-                id: v.id,
-                title: v.snippet?.title || '',
-                description: v.snippet?.description || '',
-            }));
-
-            const analysisResult = await analyzeVideoPotential({
-                videos: videosForAnalysis,
-                keyword: input.keyword,
-            });
-
-            if (analysisResult.highPotentialVideoIds) {
-                videoItems = videoItems.map(video => ({
-                    ...video,
-                    hasHighPotential: analysisResult.highPotentialVideoIds.includes(video.id),
+            try {
+                const videosForAnalysis = videoItems.map(v => ({
+                    id: v.id,
+                    title: v.snippet?.title || '',
+                    description: v.snippet?.description || '',
                 }));
+
+                const analysisResult = await analyzeVideoPotential({
+                    videos: videosForAnalysis,
+                    keyword: input.keyword,
+                });
+
+                if (analysisResult.highPotentialVideoIds) {
+                    videoItems = videoItems.map(video => ({
+                        ...video,
+                        hasHighPotential: analysisResult.highPotentialVideoIds.includes(video.id),
+                    }));
+                }
+            } catch (aiError) {
+                console.warn("AI analysis failed, returning results without potential analysis.", aiError);
+                // Gracefully degrade: if AI analysis fails, just return the videos without the extra data.
+                // The main function (searching videos) should not fail.
             }
         }
 
@@ -144,5 +151,3 @@ const searchYoutubeVideosFlow = ai.defineFlow(
     }
   }
 );
-
-    

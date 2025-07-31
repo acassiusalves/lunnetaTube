@@ -21,8 +21,16 @@ const AnalyzeCommentsInputSchema = z.object({
 });
 export type AnalyzeCommentsInput = z.infer<typeof AnalyzeCommentsInputSchema>;
 
+const ProductIdeaSchema = z.object({
+    title: z.string().describe('A short, catchy title for the product idea.'),
+    description: z.string().describe('A one-paragraph description of the product idea, explaining what it is and what problem it solves.'),
+});
+
 const AnalyzeCommentsOutputSchema = z.object({
-    analysis: z.string().describe('The full analysis of the comments, formatted as requested by the prompt.'),
+    summary: z.string().describe('A brief summary of the overall comment analysis.'),
+    sentiment: z.enum(['positive', 'negative', 'neutral', 'mixed']).describe('The overall sentiment of the comments.'),
+    keyThemes: z.array(z.string()).describe('A list of the main themes or topics discussed in the comments.'),
+    productIdeas: z.array(ProductIdeaSchema).describe('A list of potential low-ticket product ideas based on the comments.'),
 });
 export type AnalyzeCommentsOutput = z.infer<typeof AnalyzeCommentsOutputSchema>;
 
@@ -30,7 +38,10 @@ export async function analyzeComments(input: AnalyzeCommentsInput): Promise<Anal
   return analyzeCommentsFlow(input);
 }
 
-const defaultPromptText = `You are an AI assistant that analyzes video comments to understand the overall sentiment and identify key themes. You will be provided with a string containing all comments. Analyze the comments and determine the overall sentiment, key themes, and provide a summary.`;
+const defaultPromptText = `You are an AI assistant that analyzes video comments to understand the overall sentiment, identify key themes, and generate potential product ideas. 
+Analyze the comments and provide a summary, the overall sentiment, key themes, and a list of 2-3 low-ticket product ideas.
+Your entire response must be a valid JSON object that conforms to the output schema.
+`;
 
 const analyzeCommentsFlow = ai.defineFlow(
   {
@@ -51,6 +62,7 @@ const analyzeCommentsFlow = ai.defineFlow(
       model: model || 'googleai/gemini-1.5-flash',
       output: { 
           schema: AnalyzeCommentsOutputSchema,
+          format: 'json',
       },
       config: {
           temperature: 0.5,

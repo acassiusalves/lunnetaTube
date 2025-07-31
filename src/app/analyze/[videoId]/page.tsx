@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Video, mapApiToVideo, CommentData } from '@/lib/data';
 import { AnalysisViewer } from '@/components/analysis-viewer';
+import { ProductBriefDialog } from '@/components/dashboard/product-brief-dialog';
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
 const COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM = 'comment_analysis_prompt';
@@ -35,9 +36,7 @@ export default function AnalyzeVideoPage() {
   const [comments, setComments] = useState<CommentData[]>([]);
   const [commentNextPageToken, setCommentNextPageToken] = useState<string | undefined | null>(null);
   const [analysis, setAnalysis] = useState<AnalyzeCommentsOutput | null>(null);
-  const [parsedAnalysis, setParsedAnalysis] = useState<any>(null);
-
-
+  
   const [isLoadingVideo, setIsLoadingVideo] = useState(true);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
@@ -131,7 +130,6 @@ export default function AnalyzeVideoPage() {
     }
     setIsAnalyzing(true);
     setAnalysis(null);
-    setParsedAnalysis(null);
     try {
         const allCommentsText = comments.map(c => c.text).join('\n\n---\n\n');
         const result = await analyzeComments({ 
@@ -140,16 +138,6 @@ export default function AnalyzeVideoPage() {
             ...(aiModel && { model: aiModel }),
         });
         setAnalysis(result);
-
-         // Attempt to parse the analysis as JSON
-         try {
-            const jsonAnalysis = JSON.parse(result.analysis);
-            setParsedAnalysis(jsonAnalysis);
-        } catch (e) {
-            // If it's not JSON, it will be rendered as plain text
-            setParsedAnalysis(null);
-        }
-
     } catch(e: any) {
         toast({ title: "Erro na Análise", description: e.message || "Ocorreu um erro inesperado durante a análise.", variant: "destructive" });
     } finally {
@@ -239,12 +227,8 @@ export default function AnalyzeVideoPage() {
 
                     {analysis && (
                         <div className="mt-6 space-y-4 text-sm">
-                            <h4 className="font-semibold">Análise de Comentários</h4>
-                           {parsedAnalysis ? (
-                                <AnalysisViewer data={parsedAnalysis} />
-                            ) : (
-                                <p className="text-muted-foreground whitespace-pre-wrap">{analysis.analysis}</p>
-                            )}
+                            <h4 className="font-semibold">Resultado da Análise</h4>
+                            <AnalysisViewer data={analysis} />
                         </div>
                     )}
                 </CardContent>
@@ -293,6 +277,7 @@ export default function AnalyzeVideoPage() {
             </Card>
         </div>
       </div>
+      <ProductBriefDialog />
     </div>
   );
 }

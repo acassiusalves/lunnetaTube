@@ -20,6 +20,7 @@ import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { SearchProvider } from '@/context/SearchContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { ProductBriefProvider } from '@/context/ProductBriefContext';
 
 export const metadata: Metadata = {
   title: 'Analisador de Mercado',
@@ -41,59 +42,61 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <AuthProvider>
           <SearchProvider>
-            <SidebarProvider>
-              <Sidebar>
-                <SidebarHeader>
-                  <Logo />
-                </SidebarHeader>
-                <SidebarContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <Link href="/">
-                        <SidebarMenuButton>
-                          <LayoutDashboard />
-                          <span>Painel</span>
-                        </SidebarMenuButton>
-                      </Link>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <Link href="/trending">
-                        <SidebarMenuButton>
-                          <TrendingUp />
-                          <span>Tendências</span>
-                        </SidebarMenuButton>
-                      </Link>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <Link href="/admin">
-                        <SidebarMenuButton>
-                          <Shield />
-                          <span>Admin</span>
-                        </SidebarMenuButton>
-                      </Link>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <Link href="/settings">
-                        <SidebarMenuButton>
-                          <Settings />
-                          <span>Configurações</span>
-                        </SidebarMenuButton>
-                      </Link>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarContent>
-              </Sidebar>
-              <SidebarInset>
-                <div className="flex h-full flex-col">
-                  <header className="sticky top-0 z-10 flex h-14 items-center justify-end gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-                    <UserNav />
-                  </header>
-                  <main className="flex-1 overflow-auto p-4 sm:p-6">
-                    {children}
-                  </main>
-                </div>
-              </SidebarInset>
-            </SidebarProvider>
+            <ProductBriefProvider>
+              <SidebarProvider>
+                <Sidebar>
+                  <SidebarHeader>
+                    <Logo />
+                  </SidebarHeader>
+                  <SidebarContent>
+                    <SidebarMenu>
+                      <SidebarMenuItem>
+                        <Link href="/">
+                          <SidebarMenuButton>
+                            <LayoutDashboard />
+                            <span>Painel</span>
+                          </SidebarMenuButton>
+                        </Link>
+                      </SidebarMenuItem>
+                      <SidebarMenuItem>
+                        <Link href="/trending">
+                          <SidebarMenuButton>
+                            <TrendingUp />
+                            <span>Tendências</span>
+                          </SidebarMenuButton>
+                        </Link>
+                      </SidebarMenuItem>
+                      <SidebarMenuItem>
+                        <Link href="/admin">
+                          <SidebarMenuButton>
+                            <Shield />
+                            <span>Admin</span>
+                          </SidebarMenuButton>
+                        </Link>
+                      </SidebarMenuItem>
+                      <SidebarMenuItem>
+                        <Link href="/settings">
+                          <SidebarMenuButton>
+                            <Settings />
+                            <span>Configurações</span>
+                          </SidebarMenuButton>
+                        </Link>
+                      </SidebarMenuItem>
+                    </SidebarMenu>
+                  </SidebarContent>
+                </Sidebar>
+                <SidebarInset>
+                  <div className="flex h-full flex-col">
+                    <header className="sticky top-0 z-10 flex h-14 items-center justify-end gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+                      <UserNav />
+                    </header>
+                    <main className="flex-1 overflow-auto p-4 sm:p-6">
+                      {children}
+                    </main>
+                  </div>
+                </SidebarInset>
+              </SidebarProvider>
+            </ProductBriefProvider>
           </SearchProvider>
         </AuthProvider>
         <Toaster />

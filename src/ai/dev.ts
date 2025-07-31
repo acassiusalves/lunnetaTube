@@ -7,5 +7,4 @@ import '@/ai/flows/analyze-transcript.ts';
 import '@/ai/flows/youtube-search.ts';
 import '@/ai/flows/fetch-comments.ts';
 import '@/ai/flows/analyze-video-potential.ts';
-
-    
+import '@/ai/flows/generate-product-brief.ts';

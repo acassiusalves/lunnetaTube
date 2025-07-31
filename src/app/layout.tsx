@@ -20,7 +20,7 @@ import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { SearchProvider } from '@/context/SearchContext';
 import { AuthProvider } from '@/context/AuthContext';
-import { ProductBriefProvider } from '@/context/ProductBriefContext';
+
 
 export const metadata: Metadata = {
   title: 'Analisador de Mercado',
@@ -42,7 +42,6 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <AuthProvider>
           <SearchProvider>
-            <ProductBriefProvider>
               <SidebarProvider>
                 <Sidebar>
                   <SidebarHeader>
@@ -96,7 +95,6 @@ export default function RootLayout({
                   </div>
                 </SidebarInset>
               </SidebarProvider>
-            </ProductBriefProvider>
           </SearchProvider>
         </AuthProvider>
         <Toaster />

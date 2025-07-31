@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Video, mapApiToVideo, CommentData } from '@/lib/data';
 import { AnalysisViewer } from '@/components/analysis-viewer';
-import { ProductBriefDialog } from '@/components/dashboard/product-brief-dialog';
+
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
 const COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM = 'comment_analysis_prompt';
@@ -277,7 +277,6 @@ export default function AnalyzeVideoPage() {
             </Card>
         </div>
       </div>
-      <ProductBriefDialog />
     </div>
   );
 }

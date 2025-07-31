@@ -37,6 +37,7 @@ import {
   Loader2,
   Clock,
   MessageSquare,
+  Gem,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Avatar } from "../ui/avatar";
@@ -170,6 +171,7 @@ export function VideoTable({
       <Table className="min-w-[1000px]">
         <TableHeader>
           <TableRow>
+            <TableHead className="w-12">Pot.</TableHead>
             <TableHead className="w-[450px] min-w-[450px]">Título</TableHead>
             <SortableHeader columnKey="views">Visualizações</SortableHeader>
             <SortableHeader columnKey="likes">Likes</SortableHeader>
@@ -182,6 +184,18 @@ export function VideoTable({
           {videos.map((video) => (
             <React.Fragment key={video.id}>
               <TableRow>
+                <TableCell>
+                  {video.hasHighPotential && (
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Gem className="h-5 w-5 text-primary" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Alto potencial de conteúdo</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </TableCell>
                 <TableCell>
                   <div className="flex items-start gap-4">
                     <Link
@@ -317,3 +331,5 @@ export function VideoTable({
     </div>
   );
 }
+
+    

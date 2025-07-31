@@ -1,9 +1,9 @@
 'use server';
 
 /**
- * @fileOverview A flow for searching videos on YouTube.
+ * @fileOverview A flow for searching videos on YouTube and analyzing their potential.
  *
- * - searchYoutubeVideos - A function that searches for YouTube videos based on various criteria.
+ * - searchYoutubeVideos - A function that searches for YouTube videos and analyzes their potential.
  * - YoutubeSearchInput - The input type for the searchYoutubeVideos function.
  * - YoutubeSearchOutput - The return type for the searchYoutubeVideos function.
  */
@@ -11,6 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { youtube } from 'googleapis/build/src/apis/youtube';
+import { analyzeVideoPotential } from './analyze-video-potential';
 
 const YoutubeSearchInputSchema = z.object({
   apiKey: z.string().describe("The YouTube Data API v3 key."),
@@ -25,7 +26,7 @@ const YoutubeSearchInputSchema = z.object({
 export type YoutubeSearchInput = z.infer<typeof YoutubeSearchInputSchema>;
 
 const YoutubeSearchOutputSchema = z.object({
-  videos: z.any().optional().describe("An array of video results."),
+  videos: z.any().optional().describe("An array of video results, potentially with an analysis field."),
   nextPageToken: z.string().optional().describe("Token for the next page."),
   error: z.string().optional().describe("An error message if the search fails.")
 });
@@ -50,6 +51,7 @@ const searchYoutubeVideosFlow = ai.defineFlow(
     try {
         let videoIds: string[] = [];
         let nextPageToken: string | undefined | null;
+        let videoItems: any[] = [];
 
         if (input.type === 'keyword') {
             const searchResponse = await youtubeApi.search.list({
@@ -57,9 +59,9 @@ const searchYoutubeVideosFlow = ai.defineFlow(
                 q: input.keyword,
                 type: 'video',
                 regionCode: input.country,
-                maxResults: 50,
+                maxResults: 25, // Limiting results to 25 to avoid overly long AI analysis
                 pageToken: input.pageToken,
-                videoDuration: input.excludeShorts ? 'medium' : 'any', // 'medium' is > 4 min, 'short' is < 4 min. 'any' is default. This is a proxy for shorts.
+                videoDuration: input.excludeShorts ? 'medium' : 'any',
             });
 
             videoIds = searchResponse.data.items?.map(item => item.id?.videoId).filter((id): id is string => !!id) || [];
@@ -71,14 +73,14 @@ const searchYoutubeVideosFlow = ai.defineFlow(
                 chart: 'mostPopular',
                 regionCode: input.country,
                 videoCategoryId: input.category,
-                maxResults: 50,
+                maxResults: 25,
                 pageToken: input.pageToken,
             });
 
             const videos = input.excludeShorts 
                 ? trendingResponse.data.items?.filter(v => {
                     const duration = v.contentDetails?.duration;
-                    if (!duration) return true; // Keep if duration is unknown
+                    if (!duration) return true;
                     const match = duration.match(/PT(\d+M)?(\d+S)?/);
                     if (!match) return true;
                     const minutes = parseInt(match[1] || '0');
@@ -87,35 +89,60 @@ const searchYoutubeVideosFlow = ai.defineFlow(
                 }) 
                 : trendingResponse.data.items;
 
-            return { videos: videos || [], nextPageToken: trendingResponse.data.nextPageToken || undefined };
+            videoItems = videos || [];
+            nextPageToken = trendingResponse.data.nextPageToken || undefined;
         }
 
-        if (videoIds.length === 0) {
+        if (input.type === 'keyword' && videoIds.length > 0) {
+            const videoDetailsResponse = await youtubeApi.videos.list({
+                part: ['snippet', 'contentDetails', 'statistics'],
+                id: videoIds,
+                maxResults: 25,
+            });
+            
+            const filteredVideos = input.minViews
+                ? videoDetailsResponse.data.items?.filter(v => parseInt(v.statistics?.viewCount || '0', 10) >= input.minViews!)
+                : videoDetailsResponse.data.items;
+            
+            videoItems = filteredVideos || [];
+        }
+
+        if (videoItems.length === 0) {
             return { videos: [], nextPageToken: undefined };
         }
 
-        // Get video details for the IDs found
-        const videoDetailsResponse = await youtubeApi.videos.list({
-            part: ['snippet', 'contentDetails', 'statistics'],
-            id: videoIds,
-            maxResults: 50,
-        });
-        
-        // Filter by minimum views if specified
-        const filteredVideos = input.minViews
-            ? videoDetailsResponse.data.items?.filter(v => parseInt(v.statistics?.viewCount || '0', 10) >= input.minViews!)
-            : videoDetailsResponse.data.items;
+        // AI-powered analysis for keyword search
+        if (input.type === 'keyword' && input.keyword && videoItems.length > 0) {
+            const videosForAnalysis = videoItems.map(v => ({
+                id: v.id,
+                title: v.snippet?.title || '',
+                description: v.snippet?.description || '',
+            }));
+
+            const analysisResult = await analyzeVideoPotential({
+                videos: videosForAnalysis,
+                keyword: input.keyword,
+            });
+
+            if (analysisResult.highPotentialVideoIds) {
+                videoItems = videoItems.map(video => ({
+                    ...video,
+                    hasHighPotential: analysisResult.highPotentialVideoIds.includes(video.id),
+                }));
+            }
+        }
 
         return {
-            videos: filteredVideos,
+            videos: videoItems,
             nextPageToken: nextPageToken || undefined,
         };
 
     } catch (e: any) {
         console.error(e);
-        // Extract useful error message from Google API response
         const errorMessage = e.response?.data?.error?.message || e.message || "An unknown error occurred with the YouTube API.";
         return { error: `Erro na API do YouTube: ${errorMessage}` };
     }
   }
 );
+
+    

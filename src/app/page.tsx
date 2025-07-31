@@ -245,20 +245,28 @@ export default function DashboardPage() {
   const sortedVideos = useMemo(() => {
     if (!searchState.videos) return [];
     const sortableVideos = [...searchState.videos];
-    if (sortConfig.key) {
-      sortableVideos.sort((a, b) => {
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
+    
+    sortableVideos.sort((a, b) => {
+        // Prioritize high potential videos
+        if (a.hasHighPotential && !b.hasHighPotential) return -1;
+        if (!a.hasHighPotential && b.hasHighPotential) return 1;
 
-        if (aValue < bValue) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
+        // Then, sort by the selected column
+        if (sortConfig.key) {
+            const aValue = a[sortConfig.key];
+            const bValue = b[sortConfig.key];
+
+            if (aValue < bValue) {
+                return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
         }
-        if (aValue > bValue) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
+        
         return 0;
-      });
-    }
+    });
+
     return sortableVideos;
   }, [searchState.videos, sortConfig]);
 

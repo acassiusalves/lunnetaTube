@@ -20,7 +20,7 @@ export type GenerateProductStructureInput = z.infer<typeof GenerateProductStruct
 
 const ChapterSchema = z.object({
     title: z.string().describe('The title of the chapter or module.'),
-    description: z.string().describe('A brief description of what is covered in this chapter/module.'),
+    description: z.string().describe('A detailed description of what is covered in this chapter/module, with at least 300 characters.'),
 });
 
 const GenerateProductStructureOutputSchema = z.object({
@@ -38,7 +38,8 @@ const prompt = ai.definePrompt({
   input: { schema: GenerateProductStructureInputSchema },
   output: { schema: GenerateProductStructureOutputSchema },
   prompt: `You are an instructional designer and product creator. Your task is to outline a logical structure for a digital product based on its title and description.
-  Determine the best format (e.g., e-book, video course) and create a list of chapters or modules. Each chapter should have a clear title and a brief description of its contents.
+  Determine the best format (e.g., e-book, video course) and create a list of chapters or modules. 
+  Each chapter must have a clear title and a detailed description of its contents, with a minimum of 300 characters per description.
   The structure should be logical and guide the user from the basics to more advanced topics.
 
   Your entire response must be a valid JSON object that conforms to the output schema.

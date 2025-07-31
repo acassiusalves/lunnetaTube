@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -76,11 +77,14 @@ const analyzeVideoPotentialFlow = ai.defineFlow(
     if (input.videos.length === 0) {
       return { highPotentialVideoIds: [] };
     }
-
-    const { output } = await prompt(input);
-
-    return output || { highPotentialVideoIds: [] };
+    
+    try {
+        const { output } = await prompt(input);
+        return output || { highPotentialVideoIds: [] };
+    } catch(e) {
+        console.warn("AI analysis failed in analyzeVideoPotentialFlow. Returning empty array.", e);
+        // Gracefully degrade if the AI call fails.
+        return { highPotentialVideoIds: [] };
+    }
   }
 );
-
-    

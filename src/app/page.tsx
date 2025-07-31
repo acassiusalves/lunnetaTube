@@ -2,13 +2,13 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Video, mapApiToVideo, CommentData } from "@/lib/data";
 import { VideoTable, type SortConfig } from "@/components/dashboard/video-table";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Terminal } from "lucide-react";
 import { searchYoutubeVideos } from "@/ai/flows/youtube-search";
 import { fetchTopComments } from "@/ai/flows/fetch-comments";
+import { analyzeVideoPotential } from "@/ai/flows/analyze-video-potential";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -33,14 +33,21 @@ import {
 } from "@/components/ui/select";
 import { countries } from "@/lib/data";
 import { AnalysisDialog } from "@/components/dashboard/analysis-dialog";
+import { LoadingState } from "@/components/dashboard/loading-state";
 
 const API_KEY_STORAGE_ITEM = "youtube_api_key";
+
+type LoadingStatus = {
+  active: boolean;
+  message: string;
+  progress: number;
+};
 
 export default function DashboardPage() {
   const { toast } = useToast();
   const { searchState, setSearchState, clearSearchState } = useSearch();
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<LoadingStatus>({ active: false, message: '', progress: 0 });
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'views', direction: 'descending' });
     
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -83,35 +90,54 @@ export default function DashboardPage() {
   
 
   const handleSearch = async (params: SearchParams) => {
-    setIsLoading(true);
-    setError(null);
     clearSearchState();
+    setError(null);
+    setLoadingStatus({ active: true, message: 'Buscando vídeos no YouTube...', progress: 25 });
     
     const apiKey = localStorage.getItem(API_KEY_STORAGE_ITEM);
     if (!apiKey) {
       setError("Chave de API do YouTube não encontrada. Por favor, adicione-a na página de Configurações.");
-      setIsLoading(false);
+      setLoadingStatus({ active: false, message: '', progress: 0 });
       return;
     }
 
     try {
-      const result = await searchYoutubeVideos({ ...params, apiKey });
+      // Step 1: Fetch videos from YouTube
+      const result = await searchYoutubeVideos({ ...params, apiKey, skipAiAnalysis: true });
       if (result.error) {
         setError(result.error);
         clearSearchState();
-      } else {
-        const fetchedVideos = result.videos?.map(mapApiToVideo) || [];
-        setSearchState({
-            videos: fetchedVideos,
-            searchParams: params,
-            nextPageToken: result.nextPageToken,
-            scrollPosition: 0,
-        });
+        setLoadingStatus({ active: false, message: '', progress: 0 });
+        return;
       }
+      
+      let fetchedVideos = result.videos?.map(mapApiToVideo) || [];
+      const nextPageToken = result.nextPageToken;
+      setSearchState({ videos: fetchedVideos, searchParams: params, nextPageToken, scrollPosition: 0 });
+
+      // Step 2: Analyze videos with AI
+      setLoadingStatus({ active: true, message: 'Analisando resultados com IA...', progress: 75 });
+      const videosForAnalysis = fetchedVideos.map(v => ({
+          id: v.id,
+          title: v.title,
+          description: v.snippet?.description || '',
+      }));
+      
+      const analysisResult = await analyzeVideoPotential({ videos: videosForAnalysis, keyword: params.keyword! });
+
+      if (analysisResult.highPotentialVideoIds) {
+          fetchedVideos = fetchedVideos.map(video => ({
+              ...video,
+              hasHighPotential: analysisResult.highPotentialVideoIds.includes(video.id),
+          }));
+      }
+
+      setSearchState({ videos: fetchedVideos, searchParams: params, nextPageToken, scrollPosition: 0 });
+
     } catch (e: any) {
       setError(e.message || "Ocorreu um erro ao buscar os vídeos.");
     } finally {
-      setIsLoading(false);
+      setLoadingStatus({ active: false, message: '', progress: 100 });
     }
   };
 
@@ -305,8 +331,8 @@ export default function DashboardPage() {
                     Excluir Shorts
                   </Label>
                 </div>
-                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
-                  {isLoading ? (
+                <Button type="submit" disabled={loadingStatus.active} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
+                  {loadingStatus.active ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <Search className="mr-2 h-4 w-4" />
@@ -328,16 +354,8 @@ export default function DashboardPage() {
 
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
          <TooltipProvider>
-          {isLoading ? (
-             <div className="p-4">
-                <div className="space-y-3">
-                  <Skeleton className="h-16 w-full rounded-xl" />
-                  <Skeleton className="h-16 w-full rounded-xl" />
-                  <Skeleton className="h-16 w-full rounded-xl" />
-                  <Skeleton className="h-16 w-full rounded-xl" />
-                  <Skeleton className="h-16 w-full rounded-xl" />
-                </div>
-              </div>
+          {loadingStatus.active ? (
+             <LoadingState message={loadingStatus.message} progress={loadingStatus.progress} />
           ) : searchState.videos.length > 0 ? (
             <VideoTable 
               videos={sortedVideos} 
@@ -348,7 +366,7 @@ export default function DashboardPage() {
               onAnalyzeContent={handleOpenAnalysis}
             />
           ) : (
-            !isLoading && !error && (
+            !loadingStatus.active && !error && (
               <div className="flex items-center justify-center rounded-lg bg-card p-12 text-center text-muted-foreground">
                   <p>Use a busca acima para encontrar vídeos para analisar.</p>
               </div>

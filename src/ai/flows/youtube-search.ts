@@ -23,6 +23,7 @@ const YoutubeSearchInputSchema = z.object({
   excludeShorts: z.boolean().optional().describe("Whether to exclude YouTube Shorts."),
   category: z.string().optional().describe("The video category ID."),
   pageToken: z.string().optional().describe("The token for the next page of results."),
+  skipAiAnalysis: z.boolean().optional().describe("Whether to skip the AI potential analysis.")
 });
 export type YoutubeSearchInput = z.infer<typeof YoutubeSearchInputSchema>;
 
@@ -113,7 +114,7 @@ const searchYoutubeVideosFlow = ai.defineFlow(
         }
 
         // AI-powered analysis for keyword search
-        if (input.type === 'keyword' && input.keyword && videoItems.length > 0) {
+        if (input.type === 'keyword' && input.keyword && videoItems.length > 0 && !input.skipAiAnalysis) {
             try {
                 const videosForAnalysis = videoItems.map(v => ({
                     id: v.id,

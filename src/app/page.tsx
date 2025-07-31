@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { countries } from "@/lib/data";
+import { AnalysisDialog } from "@/components/dashboard/analysis-dialog";
 
 const API_KEY_STORAGE_ITEM = "youtube_api_key";
 
@@ -45,6 +46,9 @@ export default function DashboardPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [isAnalysisDialogOpen, setIsAnalysisDialogOpen] = useState(false);
+  const [selectedVideoForAnalysis, setSelectedVideoForAnalysis] = useState<Video | null>(null);
 
   const mainContainerRef = useRef<HTMLDivElement>(null);
 
@@ -207,6 +211,10 @@ export default function DashboardPage() {
     }
   };
 
+  const handleOpenAnalysis = (video: Video) => {
+    setSelectedVideoForAnalysis(video);
+    setIsAnalysisDialogOpen(true);
+  };
 
   const sortedVideos = useMemo(() => {
     if (!searchState.videos) return [];
@@ -231,6 +239,7 @@ export default function DashboardPage() {
   const canLoadMore = !!searchState.nextPageToken;
 
   return (
+    <>
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full overflow-y-auto" ref={mainContainerRef}>
       <div className="space-y-4">
         <header>
@@ -336,6 +345,7 @@ export default function DashboardPage() {
               isLoadingComments={isLoadingComments}
               sortConfig={sortConfig}
               onSort={handleSort}
+              onAnalyzeContent={handleOpenAnalysis}
             />
           ) : (
             !isLoading && !error && (
@@ -362,5 +372,13 @@ export default function DashboardPage() {
         )}
       </div>
     </div>
+    {isAnalysisDialogOpen && selectedVideoForAnalysis && (
+        <AnalysisDialog 
+            isOpen={isAnalysisDialogOpen}
+            setIsOpen={setIsAnalysisDialogOpen}
+            video={selectedVideoForAnalysis}
+        />
+    )}
+    </>
   );
 }

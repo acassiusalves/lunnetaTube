@@ -36,6 +36,7 @@ import {
   Tag,
   Loader2,
   Clock,
+  MessageSquare,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Avatar } from "../ui/avatar";
@@ -50,6 +51,7 @@ interface VideoTableProps {
   isLoadingComments: boolean;
   sortConfig: SortConfig;
   onSort: (key: keyof Video) => void;
+  onAnalyzeContent: (video: Video) => void;
 }
 
 const Comment = ({ text }: { text: string }) => {
@@ -107,6 +109,7 @@ export function VideoTable({
   isLoadingComments,
   sortConfig,
   onSort,
+  onAnalyzeContent,
 }: VideoTableProps) {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
@@ -257,10 +260,14 @@ export function VideoTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                       <DropdownMenuItem onSelect={() => onAnalyzeContent(video)}>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            <span>Analisar Conteúdo</span>
+                       </DropdownMenuItem>
                        <DropdownMenuItem asChild>
                          <Link href={`/analyze/${video.id}`} className="cursor-pointer">
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            <span>Analisar Vídeo</span>
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            <span>Analisar Comentários</span>
                         </Link>
                       </DropdownMenuItem>
                     </DropdownMenuContent>

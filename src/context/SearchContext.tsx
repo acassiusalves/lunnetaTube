@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState } from 'react';
 import type { Video } from '@/lib/data';
-import type { SearchParams } from '@/components/dashboard/video-search-tabs';
+import type { SearchParams } from '@/lib/data';
 
 interface SearchState {
   searchParams: SearchParams | null;

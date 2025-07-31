@@ -16,22 +16,46 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Save, CheckCircle, XCircle, Bot } from "lucide-react";
+import { Save, CheckCircle, XCircle, Bot, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/context/AuthContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const API_KEY_STORAGE_ITEM = "youtube_api_key";
 const COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM = "comment_analysis_prompt";
 const AI_MODEL_STORAGE_ITEM = "ai_model";
 
+
+const SettingsSkeleton = () => (
+    <div className="container mx-auto max-w-3xl space-y-6">
+        <header>
+            <div className="flex justify-between items-center">
+                <div>
+                    <Skeleton className="h-8 w-48 mb-2" />
+                    <Skeleton className="h-4 w-80" />
+                </div>
+                <Skeleton className="h-10 w-32" />
+            </div>
+        </header>
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-40 w-full" />
+    </div>
+);
+
+
 export default function SettingsPage() {
   const { toast } = useToast();
+  const { userProfile, loading: authLoading } = useAuth();
+
   const [apiKey, setApiKey] = useState("");
   const [commentAnalysisPrompt, setCommentAnalysisPrompt] = useState("");
   const [aiModel, setAiModel] = useState("googleai/gemini-1.5-flash");
   const [isConnected, setIsConnected] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     const savedApiKey = localStorage.getItem(API_KEY_STORAGE_ITEM);
     if (savedApiKey) {
       setApiKey(savedApiKey);
@@ -77,6 +101,10 @@ export default function SettingsPage() {
     e.preventDefault();
     handleSaveSettings();
   };
+
+  if (authLoading || !isMounted) {
+    return <SettingsSkeleton />;
+  }
 
   return (
     <div className="container mx-auto max-w-3xl">
@@ -170,33 +198,35 @@ export default function SettingsPage() {
             </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Prompt de Análise de Comentários</CardTitle>
-            <CardDescription>
-                Personalize o prompt que a IA usará para analisar os comentários dos vídeos. 
-                Deixe em branco para usar o prompt padrão. A IA sempre receberá a lista de comentários após seu prompt.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="comment-analysis-prompt">Prompt Personalizado</Label>
-              <Textarea
-                id="comment-analysis-prompt"
-                placeholder="Ex: Você é um analista de marketing. Analise os comentários e identifique as 3 principais dúvidas dos clientes e 3 sugestões de melhoria para o produto..."
-                value={commentAnalysisPrompt}
-                onChange={(e) => setCommentAnalysisPrompt(e.target.value)}
-                className="min-h-[150px]"
-              />
-            </div>
-          </CardContent>
-           <CardFooter className="justify-end">
-            <Button type="button" onClick={handleSaveSettings}>
-                <Save className="mr-2 h-4 w-4" />
-                Salvar Configurações
-            </Button>
-          </CardFooter>
-        </Card>
+        {userProfile?.role === 'admin' && (
+            <Card>
+            <CardHeader>
+                <CardTitle>Prompt de Análise de Comentários</CardTitle>
+                <CardDescription>
+                    Personalize o prompt que a IA usará para analisar os comentários dos vídeos. 
+                    Deixe em branco para usar o prompt padrão. A IA sempre receberá a lista de comentários após seu prompt.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-2">
+                <Label htmlFor="comment-analysis-prompt">Prompt Personalizado</Label>
+                <Textarea
+                    id="comment-analysis-prompt"
+                    placeholder="Ex: Você é um analista de marketing. Analise os comentários e identifique as 3 principais dúvidas dos clientes e 3 sugestões de melhoria para o produto..."
+                    value={commentAnalysisPrompt}
+                    onChange={(e) => setCommentAnalysisPrompt(e.target.value)}
+                    className="min-h-[150px]"
+                />
+                </div>
+            </CardContent>
+            <CardFooter className="justify-end">
+                <Button type="button" onClick={handleSaveSettings}>
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar Configurações
+                </Button>
+            </CardFooter>
+            </Card>
+        )}
       </form>
     </div>
   );

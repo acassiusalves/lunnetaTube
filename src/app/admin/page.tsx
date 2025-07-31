@@ -27,61 +27,49 @@ export default function AdminPage() {
   const { user, userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<UserData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [accessDenied, setAccessDenied] = useState(false);
-
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  
   useEffect(() => {
-    // If auth is still loading, do nothing.
+    // Wait for auth to finish loading
     if (authLoading) {
       return;
     }
 
-    // If there's no user or no user profile, deny access.
-    if (!user || !userProfile) {
-      setAccessDenied(true);
-      setIsLoading(false);
-      return;
+    // Check for admin role
+    if (user && userProfile?.role === 'admin') {
+      const fetchUsers = async () => {
+        try {
+          const usersCollection = collection(db, 'users');
+          const userSnapshot = await getDocs(usersCollection);
+          const userList = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
+              const data = doc.data();
+              return {
+                id: doc.id,
+                name: data.name || 'N/A',
+                email: data.email,
+                whatsapp: data.whatsapp,
+                role: data.role,
+                status: 'active',
+              } as UserData;
+          });
+          setUsers(userList);
+        } catch(error) {
+          console.error("Error fetching users:", error);
+          // Handle Firestore read error if needed
+        } finally {
+          setIsLoadingData(false);
+        }
+      };
+      fetchUsers();
+    } else {
+      // If not an admin or not logged in, stop loading and let the component render the access denied message.
+      setIsLoadingData(false);
     }
-    
-    // If the user is not an admin, deny access.
-    if (userProfile.role !== 'admin') {
-      setAccessDenied(true);
-      setIsLoading(false);
-      return;
-    }
 
-    // If we reach here, user is an admin. Let's fetch the data.
-    const fetchUsers = async () => {
-      try {
-        const usersCollection = collection(db, 'users');
-        const userSnapshot = await getDocs(usersCollection);
-        const userList = userSnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              name: data.name || 'N/A',
-              email: data.email,
-              whatsapp: data.whatsapp,
-              role: data.role,
-              status: 'active',
-            } as UserData;
-        });
-        setUsers(userList);
-      } catch(error) {
-        console.error("Error fetching users:", error);
-        // This likely indicates a Firestore rules issue if it happens now.
-        setAccessDenied(true); 
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUsers();
-
-  }, [user, userProfile, authLoading, router]);
+  }, [user, userProfile, authLoading]);
 
 
-  if (isLoading) {
+  if (authLoading || (userProfile?.role === 'admin' && isLoadingData)) {
     return (
         <div className="container mx-auto">
             <header className="mb-6">
@@ -116,7 +104,7 @@ export default function AdminPage() {
     );
   }
   
-  if (accessDenied) {
+  if (userProfile?.role !== 'admin') {
      return (
       <div className="container mx-auto">
         <Alert variant="destructive" className="max-w-md mx-auto">

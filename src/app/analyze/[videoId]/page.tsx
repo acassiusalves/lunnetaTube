@@ -228,7 +228,7 @@ export default function AnalyzeVideoPage() {
                     {analysis && (
                         <div className="mt-6 space-y-4 text-sm">
                             <h4 className="font-semibold">Resultado da Análise</h4>
-                            <AnalysisViewer data={analysis} />
+                            <AnalysisViewer data={analysis} videoId={videoId as string} />
                         </div>
                     )}
                 </CardContent>

@@ -10,17 +10,18 @@ import { ArrowRight } from 'lucide-react';
 
 interface AnalysisViewerProps {
   data: any;
+  videoId?: string;
   level?: number;
 }
 
-const renderValue = (value: any, key: string, level: number) => {
+const renderValue = (value: any, key: string, level: number, videoId?: string) => {
   if (key === 'productIdeas' && Array.isArray(value)) {
     return (
       <div className="space-y-4">
         {value.map((idea, index) => {
            const encodedTitle = encodeURIComponent(idea.title);
            const encodedDescription = encodeURIComponent(idea.description);
-           const href = `/product-modeling/${encodedTitle}?description=${encodedDescription}`;
+           const href = `/product-modeling/${encodedTitle}?description=${encodedDescription}&videoId=${videoId || ''}`;
 
            return (
             <Card key={index} className="bg-muted/50">
@@ -54,7 +55,7 @@ const renderValue = (value: any, key: string, level: number) => {
       <ul className="list-disc list-inside space-y-1 pl-4">
         {value.map((item, index) => (
           <li key={`${key}-${index}`} className="text-muted-foreground">
-            {typeof item === 'object' ? renderValue(item, `${key}-${index}`, level + 1) : String(item)}
+            {typeof item === 'object' ? renderValue(item, `${key}-${index}`, level + 1, videoId) : String(item)}
           </li>
         ))}
       </ul>
@@ -62,13 +63,13 @@ const renderValue = (value: any, key: string, level: number) => {
   }
 
   if (typeof value === 'object' && value !== null) {
-    return <AnalysisViewer data={value} level={level + 1} />;
+    return <AnalysisViewer data={value} level={level + 1} videoId={videoId} />;
   }
 
   return <p>{String(value)}</p>;
 };
 
-export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ data, level = 0 }) => {
+export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ data, videoId, level = 0 }) => {
   if (typeof data !== 'object' || data === null) {
     return <p>Dados de análise inválidos.</p>;
   }
@@ -85,7 +86,7 @@ export const AnalysisViewer: React.FC<AnalysisViewerProps> = ({ data, level = 0 
       {Object.entries(data).map(([key, value]) => (
         <div key={key}>
           <h4 className="font-semibold text-foreground capitalize">{humanReadableKeys[key] || key}</h4>
-          {renderValue(value, key, level)}
+          {renderValue(value, key, level, videoId)}
         </div>
       ))}
     </div>

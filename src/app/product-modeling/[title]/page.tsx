@@ -34,6 +34,7 @@ export default function ProductModelingPage() {
 
     const title = decodeURIComponent(params.title as string);
     const description = searchParams.get('description') || '';
+    const videoId = searchParams.get('videoId');
 
     const [activeTab, setActiveTab] = useState('structure');
     const [isLoading, setIsLoading] = useState(false);
@@ -81,14 +82,16 @@ export default function ProductModelingPage() {
         guide: 'Guia Prático',
         other: 'Outro'
     };
+    
+    const backHref = videoId ? `/analyze/${videoId}` : '/';
 
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">
             <div className="mb-6">
                 <Button asChild variant="outline" size="sm">
-                    <Link href="/">
+                    <Link href={backHref}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Voltar ao Painel
+                        Voltar à Análise
                     </Link>
                 </Button>
             </div>

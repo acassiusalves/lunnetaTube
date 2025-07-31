@@ -7,11 +7,11 @@
  */
 
 import { z } from 'zod';
-import { auth, db } from './config';
+import { db } from './config';
 import { doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { getAuth } from "firebase-admin/auth";
-import { initializeApp, getApps, App } from 'firebase-admin/app';
-import { credential } from 'firebase-admin';
+import { initializeApp, getApps, App, credential } from 'firebase-admin/app';
+
 
 // Initialize Firebase Admin SDK
 let adminApp: App;

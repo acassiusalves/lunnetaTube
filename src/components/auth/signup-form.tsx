@@ -28,11 +28,14 @@ export function SignupForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Save user data to Firestore
+      // Define o papel do usuário. Lógica para atribuir 'admin'.
+      const userRole = email === "acassiusalves@gmail.com" ? "admin" : "user";
+
+      // Salva os dados do usuário no Firestore
       await setDoc(doc(db, "users", user.uid), {
         email: user.email,
         whatsapp: whatsapp,
-        role: email === "acassiusalves@gmail.com" ? "admin" : "user", // Assign admin role
+        role: userRole,
         createdAt: new Date(),
       });
 
@@ -41,11 +44,23 @@ export function SignupForm() {
         description: "Sua conta foi criada com sucesso.",
       });
 
+      // Redireciona para a página principal após o sucesso do cadastro e da escrita no banco.
       router.push("/");
+
     } catch (error: any) {
+      // Diferencia erros de autenticação e de banco de dados para melhor feedback.
+      let errorMessage = "Ocorreu um erro desconhecido.";
+      if (error.code?.includes('auth')) {
+        errorMessage = "Erro de autenticação: " + error.message;
+      } else if (error.code?.includes('permission-denied')) {
+        errorMessage = "Erro de permissão: verifique as regras de segurança do Firestore.";
+      } else {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Erro de Cadastro",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

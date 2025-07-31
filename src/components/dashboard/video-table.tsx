@@ -220,9 +220,9 @@ export function VideoTable({
                                 <span className="font-semibold">Shorts</span>
                             </div>
                             )}
-                            {video.hasHighPotential && (
-                                <div className="flex items-center gap-1.5 text-primary font-semibold">
-                                    <Sparkles className="h-4 w-4" />
+                             {video.hasHighPotential && (
+                                <div className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                                    <Sparkles className="h-3 w-3" />
                                     <span>Alto Potencial</span>
                                 </div>
                             )}

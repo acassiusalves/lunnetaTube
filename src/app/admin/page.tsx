@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 import { AdminPanel } from '@/components/admin/admin-panel';
 import { collection, getDocs, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '@/firebase/config';
@@ -72,6 +73,8 @@ export default function AdminPage() {
   const { user, userProfile, loading: authLoading } = useAuth();
   const [users, setUsers] = useState<UserData[]>([]);
   const [pageState, setPageState] = useState<'loading' | 'denied' | 'success'>('loading');
+  const router = useRouter();
+
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -88,36 +91,42 @@ export default function AdminPage() {
           status: 'active', // Placeholder
         } as UserData;
       });
-      // Filter out the current admin user from the list
-      const filteredList = userList.filter(u => u.id !== user?.uid);
-      setUsers(filteredList);
-      setPageState('success');
+      setUsers(userList);
     } catch (error) {
       console.error("Error fetching users:", error);
+      // Se houver um erro ao buscar usuários, pode ser um problema de permissão.
       setPageState('denied');
     }
-  }, [user]);
+  }, []);
   
   useEffect(() => {
+    // Se a autenticação ainda está carregando, espere.
     if (authLoading) {
       setPageState('loading');
       return;
     }
 
+    // Se não há usuário logado após o carregamento, redirecione para o login.
+    if (!user) {
+        router.push('/login');
+        return;
+    }
+    
+    // Se há um usuário, mas o perfil (com a role) ainda não carregou, espere.
     if (!userProfile) {
-      if (!authLoading && !user) {
-         router.push('/login');
-      }
-      setPageState('denied');
-      return;
+        // Isso pode acontecer por um instante enquanto o perfil é buscado do Firestore.
+        // A tela de loading continuará sendo exibida.
+        return;
     }
 
+    // Agora temos certeza que temos um usuário e um perfil.
     if (userProfile.role === 'admin') {
-      fetchUsers();
+        setPageState('success');
+        fetchUsers();
     } else {
-      setPageState('denied');
+        setPageState('denied');
     }
-  }, [user, userProfile, authLoading, fetchUsers]);
+  }, [user, userProfile, authLoading, router, fetchUsers]);
 
 
   if (pageState === 'loading') {

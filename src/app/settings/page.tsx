@@ -189,8 +189,8 @@ export default function SettingsPage() {
                             <SelectItem value="googleai/gemini-1.5-flash">
                                 Gemini 1.5 Flash (Rápido e eficiente)
                             </SelectItem>
-                             <SelectItem value="googleai/gemini-1.5-pro">
-                                Gemini 1.5 Pro (Mais poderoso)
+                             <SelectItem value="googleai/gemini-2.5-pro">
+                                Gemini 2.5 Pro (Mais poderoso)
                             </SelectItem>
                         </SelectContent>
                     </Select>

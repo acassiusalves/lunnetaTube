@@ -59,7 +59,7 @@ const analyzeCommentsFlow = ai.defineFlow(
 
     const {output} = await ai.generate({
       prompt: `${finalPrompt}\n\nComments:\n${comments}`,
-      model: model || 'googleai/gemini-1.5-flash',
+      model: model || 'googleai/gemini-2.5-pro',
       output: { 
           schema: AnalyzeCommentsOutputSchema,
           format: 'json',

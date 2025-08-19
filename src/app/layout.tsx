@@ -5,16 +5,6 @@ import { Bot, LayoutDashboard, Settings, TrendingUp, Shield, Facebook } from 'lu
 
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarInset,
-} from '@/components/ui/sidebar';
 import { UserNav } from '@/components/user-nav';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
@@ -42,67 +32,40 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <AuthProvider>
           <SearchProvider>
-              <SidebarProvider>
-                <Sidebar>
-                  <SidebarHeader>
+            <div className="flex min-h-screen w-full flex-col">
+              <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm md:px-6 z-50">
+                <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+                  <Link href="/" className="flex items-center gap-2 text-lg font-semibold md:text-base">
                     <Logo />
-                  </SidebarHeader>
-                  <SidebarContent>
-                    <SidebarMenu>
-                      <SidebarMenuItem>
-                        <Link href="/">
-                          <SidebarMenuButton>
-                            <LayoutDashboard />
-                            <span>Painel</span>
-                          </SidebarMenuButton>
-                        </Link>
-                      </SidebarMenuItem>
-                      <SidebarMenuItem>
-                        <Link href="/trending">
-                          <SidebarMenuButton>
-                            <TrendingUp />
-                            <span>Tendências</span>
-                          </SidebarMenuButton>
-                        </Link>
-                      </SidebarMenuItem>
-                       <SidebarMenuItem>
-                        <Link href="/fb-library">
-                          <SidebarMenuButton>
-                            <Facebook />
-                            <span>FB Biblioteca</span>
-                          </SidebarMenuButton>
-                        </Link>
-                      </SidebarMenuItem>
-                      <SidebarMenuItem>
-                        <Link href="/admin">
-                          <SidebarMenuButton>
-                            <Shield />
-                            <span>Admin</span>
-                          </SidebarMenuButton>
-                        </Link>
-                      </SidebarMenuItem>
-                      <SidebarMenuItem>
-                        <Link href="/settings">
-                          <SidebarMenuButton>
-                            <Settings />
-                            <span>Configurações</span>
-                          </SidebarMenuButton>
-                        </Link>
-                      </SidebarMenuItem>
-                    </SidebarMenu>
-                  </SidebarContent>
-                </Sidebar>
-                <SidebarInset>
-                  <div className="flex h-full flex-col">
-                    <header className="sticky top-0 z-10 flex h-14 items-center justify-end gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-                      <UserNav />
-                    </header>
-                    <main className="flex-1 overflow-auto p-4 sm:p-6">
-                      {children}
-                    </main>
-                  </div>
-                </SidebarInset>
-              </SidebarProvider>
+                    <span className="sr-only">Analisador de Mercado</span>
+                  </Link>
+                  <Link href="/" className="text-muted-foreground transition-colors hover:text-foreground">
+                    Painel
+                  </Link>
+                  <Link href="/trending" className="text-muted-foreground transition-colors hover:text-foreground">
+                    Tendências
+                  </Link>
+                  <Link href="/fb-library" className="text-muted-foreground transition-colors hover:text-foreground">
+                    FB Biblioteca
+                  </Link>
+                  <Link href="/admin" className="text-muted-foreground transition-colors hover:text-foreground">
+                    Admin
+                  </Link>
+                   <Link href="/settings" className="text-muted-foreground transition-colors hover:text-foreground">
+                    Configurações
+                  </Link>
+                </nav>
+                <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
+                    <div className="ml-auto flex-1 sm:flex-initial">
+                        {/* Mobile Menu could be here */}
+                    </div>
+                    <UserNav />
+                </div>
+              </header>
+              <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+                {children}
+              </main>
+            </div>
           </SearchProvider>
         </AuthProvider>
         <Toaster />

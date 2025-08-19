@@ -13,11 +13,10 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { youtube } from 'googleapis/build/src/apis/youtube';
 
-export const VideoCategorySchema = z.object({
+const VideoCategorySchema = z.object({
   id: z.string().describe("The ID of the video category."),
   title: z.string().describe("The display name of the category."),
 });
-export type VideoCategory = z.infer<typeof VideoCategorySchema>;
 
 const FetchVideoCategoriesInputSchema = z.object({
   apiKey: z.string().describe("The YouTube Data API v3 key."),

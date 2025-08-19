@@ -10,12 +10,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { countries } from '@/lib/data';
 import { Loader2, Search, Terminal } from 'lucide-react';
 import { searchYoutubeVideos } from '@/ai/flows/youtube-search';
-import { fetchVideoCategories, type VideoCategory } from '@/ai/flows/fetch-video-categories';
+import { fetchVideoCategories } from '@/ai/flows/fetch-video-categories';
 import { Video, mapApiToVideo } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { VideoTable, type SortConfig } from '@/components/dashboard/video-table';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { z } from 'zod';
+
+const VideoCategorySchema = z.object({
+  id: z.string().describe("The ID of the video category."),
+  title: z.string().describe("The display name of the category."),
+});
+export type VideoCategory = z.infer<typeof VideoCategorySchema>;
+
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
 

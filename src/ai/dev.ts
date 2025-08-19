@@ -1,3 +1,4 @@
+
 import { config } from 'dotenv';
 config();
 
@@ -10,3 +11,4 @@ import '@/ai/flows/analyze-video-potential.ts';
 import '@/ai/flows/generate-product-brief.ts';
 import '@/ai/flows/generate-product-structure.ts';
 import '@/ai/flows/generate-headlines.ts';
+import '@/ai/flows/facebook-ads-search.ts';

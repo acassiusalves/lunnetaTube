@@ -1,7 +1,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Bot, LayoutDashboard, Settings, TrendingUp, Shield } from 'lucide-react';
+import { Bot, LayoutDashboard, Settings, TrendingUp, Shield, Facebook } from 'lucide-react';
 
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -62,6 +62,14 @@ export default function RootLayout({
                           <SidebarMenuButton>
                             <TrendingUp />
                             <span>Tendências</span>
+                          </SidebarMenuButton>
+                        </Link>
+                      </SidebarMenuItem>
+                       <SidebarMenuItem>
+                        <Link href="/fb-library">
+                          <SidebarMenuButton>
+                            <Facebook />
+                            <span>FB Biblioteca</span>
                           </SidebarMenuButton>
                         </Link>
                       </SidebarMenuItem>

@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Save, CheckCircle, XCircle, Bot, Loader2 } from "lucide-react";
+import { Save, CheckCircle, XCircle, Bot, Facebook } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
@@ -25,6 +25,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 const API_KEY_STORAGE_ITEM = "youtube_api_key";
 const COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM = "comment_analysis_prompt";
 const AI_MODEL_STORAGE_ITEM = "ai_model";
+const FACEBOOK_APP_ID_STORAGE_ITEM = "facebook_app_id";
+const FACEBOOK_APP_SECRET_STORAGE_ITEM = "facebook_app_secret";
 
 
 const SettingsSkeleton = () => (
@@ -50,35 +52,54 @@ export default function SettingsPage() {
 
   const [apiKey, setApiKey] = useState("");
   const [commentAnalysisPrompt, setCommentAnalysisPrompt] = useState("");
-  const [aiModel, setAiModel] = useState("googleai/gemini-1.5-flash");
-  const [isConnected, setIsConnected] = useState(false);
+  const [aiModel, setAiModel] = useState("googleai/gemini-2.5-pro");
+  const [facebookAppId, setFacebookAppId] = useState("");
+  const [facebookAppSecret, setFacebookAppSecret] = useState("");
+  const [isYouTubeConnected, setIsYouTubeConnected] = useState(false);
+  const [isFacebookConnected, setIsFacebookConnected] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
+    // YouTube
     const savedApiKey = localStorage.getItem(API_KEY_STORAGE_ITEM);
     if (savedApiKey) {
       setApiKey(savedApiKey);
-      setIsConnected(true);
+      setIsYouTubeConnected(true);
     }
+    // Comment Prompt
     const savedPrompt = localStorage.getItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM);
     if (savedPrompt) {
       setCommentAnalysisPrompt(savedPrompt);
     }
+    // AI Model
     const savedModel = localStorage.getItem(AI_MODEL_STORAGE_ITEM);
     if (savedModel) {
       setAiModel(savedModel);
     }
+    // Facebook
+    const savedFacebookAppId = localStorage.getItem(FACEBOOK_APP_ID_STORAGE_ITEM);
+    if (savedFacebookAppId) {
+      setFacebookAppId(savedFacebookAppId);
+    }
+     const savedFacebookAppSecret = localStorage.getItem(FACEBOOK_APP_SECRET_STORAGE_ITEM);
+    if (savedFacebookAppSecret) {
+      setFacebookAppSecret(savedFacebookAppSecret);
+    }
+    if(savedFacebookAppId && savedFacebookAppSecret) {
+        setIsFacebookConnected(true);
+    }
+
   }, []);
 
   const handleSaveSettings = () => {
     // Save API Key
     if (apiKey) {
       localStorage.setItem(API_KEY_STORAGE_ITEM, apiKey);
-      setIsConnected(true);
+      setIsYouTubeConnected(true);
     } else {
       localStorage.removeItem(API_KEY_STORAGE_ITEM);
-      setIsConnected(false);
+      setIsYouTubeConnected(false);
     }
     
     // Save Comment Analysis Prompt
@@ -90,6 +111,20 @@ export default function SettingsPage() {
 
     // Save AI Model
     localStorage.setItem(AI_MODEL_STORAGE_ITEM, aiModel);
+
+    // Save Facebook Credentials
+    if (facebookAppId) {
+        localStorage.setItem(FACEBOOK_APP_ID_STORAGE_ITEM, facebookAppId);
+    } else {
+        localStorage.removeItem(FACEBOOK_APP_ID_STORAGE_ITEM);
+    }
+    if (facebookAppSecret) {
+        localStorage.setItem(FACEBOOK_APP_SECRET_STORAGE_ITEM, facebookAppSecret);
+    } else {
+        localStorage.removeItem(FACEBOOK_APP_SECRET_STORAGE_ITEM);
+    }
+    setIsFacebookConnected(!!(facebookAppId && facebookAppSecret));
+
 
     toast({
         title: "Configurações Salvas",
@@ -128,7 +163,7 @@ export default function SettingsPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>API do YouTube</CardTitle>
-              {isConnected ? (
+              {isYouTubeConnected ? (
                 <Badge variant="secondary" className="border-green-500 text-green-700">
                   <CheckCircle className="mr-2 h-4 w-4" />
                   Conectado
@@ -163,6 +198,59 @@ export default function SettingsPage() {
                 placeholder="Cole sua chave de API aqui"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2"><Facebook />API do Facebook</CardTitle>
+              {isFacebookConnected ? (
+                <Badge variant="secondary" className="border-green-500 text-green-700">
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Conectado
+                </Badge>
+              ) : (
+                <Badge variant="destructive">
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Desconectado
+                </Badge>
+              )}
+            </div>
+            <CardDescription>
+              Insira suas credenciais da API do Facebook. Você pode obter as suas no{" "}
+              <Link
+                href="https://developers.facebook.com/apps/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-primary hover:underline"
+              >
+                Painel de Aplicativos do Facebook
+              </Link>
+              .
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="facebook-app-id">ID do Aplicativo</Label>
+              <Input
+                id="facebook-app-id"
+                type="text"
+                placeholder="Seu ID do Aplicativo do Facebook"
+                value={facebookAppId}
+                onChange={(e) => setFacebookAppId(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="facebook-app-secret">Chave Secreta do Aplicativo</Label>
+              <Input
+                id="facebook-app-secret"
+                type="password"
+                placeholder="Sua Chave Secreta do Aplicativo do Facebook"
+                value={facebookAppSecret}
+                onChange={(e) => setFacebookAppSecret(e.target.value)}
               />
             </div>
           </CardContent>

@@ -88,7 +88,7 @@ export default function DashboardPage() {
   const handleSearch = async (params: SearchParams) => {
     clearSearchState();
     setError(null);
-    setLoadingStatus({ active: true, message: 'Buscando vídeos no YouTube...', progress: 25 });
+    setLoadingStatus({ active: true, message: 'Traduzindo termo e buscando vídeos...', progress: 25 });
     
     const apiKey = localStorage.getItem(API_KEY_STORAGE_ITEM);
     if (!apiKey) {
@@ -98,7 +98,7 @@ export default function DashboardPage() {
     }
 
     try {
-      // Step 1: Fetch videos from YouTube
+      // Step 1: Fetch videos from YouTube (which now includes translation)
       const result = await searchYoutubeVideos({ ...params, apiKey, skipAiAnalysis: true });
       if (result.error) {
         setError(result.error);

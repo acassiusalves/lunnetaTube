@@ -13,6 +13,9 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { youtube } from 'googleapis/build/src/apis/youtube';
 import { analyzeVideoPotential } from './analyze-video-potential';
+import { translateKeyword } from './translate-keyword';
+import { countries } from '@/lib/data';
+
 
 const YoutubeSearchInputSchema = z.object({
   apiKey: z.string().describe("The YouTube Data API v3 key."),
@@ -56,9 +59,29 @@ const searchYoutubeVideosFlow = ai.defineFlow(
         let videoItems: any[] = [];
 
         if (input.type === 'keyword') {
+            
+            let searchTerm = input.keyword || '';
+
+            // Translate keyword if a country other than Brazil is selected
+            if (input.country && input.country !== 'br' && searchTerm) {
+                 try {
+                    const countryInfo = countries.find(c => c.value === input.country);
+                    if (countryInfo) {
+                        const translationResult = await translateKeyword({
+                            text: searchTerm,
+                            targetLanguage: countryInfo.language,
+                        });
+                        searchTerm = translationResult.translatedText;
+                    }
+                } catch (e) {
+                    console.warn(`Keyword translation failed for country ${input.country}. Using original keyword.`, e);
+                    // If translation fails, proceed with the original keyword
+                }
+            }
+            
             const searchResponse = await youtubeApi.search.list({
                 part: ['snippet'],
-                q: input.keyword,
+                q: searchTerm,
                 type: 'video',
                 regionCode: input.country,
                 maxResults: 25, // Limiting results to 25 to avoid overly long AI analysis
@@ -83,10 +106,11 @@ const searchYoutubeVideosFlow = ai.defineFlow(
                 ? trendingResponse.data.items?.filter(v => {
                     const duration = v.contentDetails?.duration;
                     if (!duration) return true;
-                    const match = duration.match(/PT(\d+M)?(\d+S)?/);
-                    if (!match) return true;
-                    const minutes = parseInt(match[1] || '0');
-                    const seconds = parseInt(match[2] || '0');
+                    // Improved check for shorts (duration <= 60 seconds)
+                    const match = duration.match(/PT(?:(\d+)M)?(?:(\d+)S)?/);
+                    if (!match) return true; // if duration format is weird, don't filter
+                    const minutes = parseInt(match[1] || '0', 10);
+                    const seconds = parseInt(match[2] || '0', 10);
                     return (minutes * 60 + seconds) > 60;
                 }) 
                 : trendingResponse.data.items;

@@ -12,3 +12,4 @@ import '@/ai/flows/generate-product-brief.ts';
 import '@/ai/flows/generate-product-structure.ts';
 import '@/ai/flows/generate-headlines.ts';
 import '@/ai/flows/facebook-ads-search.ts';
+import '@/ai/flows/translate-keyword.ts';

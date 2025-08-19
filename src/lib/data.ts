@@ -1,15 +1,15 @@
 
 
 export const countries = [
-  { value: 'br', label: 'Brasil' },
-  { value: 'us', label: 'Estados Unidos' },
-  { value: 'gb', label: 'Reino Unido' },
-  { value: 'ca', label: 'Canadá' },
-  { value: 'au', label: 'Austrália' },
-  { value: 'de', label: 'Alemanha' },
-  { value: 'fr', label: 'França' },
-  { value: 'jp', label: 'Japão' },
-  { value: 'in', label: 'Índia' },
+  { value: 'br', label: 'Brasil', language: 'Brazilian Portuguese' },
+  { value: 'us', label: 'Estados Unidos', language: 'English' },
+  { value: 'gb', label: 'Reino Unido', language: 'English' },
+  { value: 'ca', label: 'Canadá', language: 'English' },
+  { value: 'au', label: 'Austrália', language: 'English' },
+  { value: 'de', label: 'Alemanha', language: 'German' },
+  { value: 'fr', label: 'França', language: 'French' },
+  { value: 'jp', label: 'Japão', language: 'Japanese' },
+  { value: 'in', label: 'Índia', language: 'Hindi' },
 ];
 
 export const categories = [

@@ -56,7 +56,7 @@ export type Ad = z.infer<typeof AdSchema>;
 
 
 const FacebookAdsSearchOutputSchema = z.object({
-  ads: z.array(Ad).optional().describe('An array of ad results.'),
+  ads: z.array(AdSchema).optional().describe('An array of ad results.'),
   error: z.string().optional().describe('An error message if the search fails.'),
 });
 export type FacebookAdsSearchOutput = z.infer<typeof FacebookAdsSearchOutputSchema>;
@@ -103,7 +103,7 @@ const searchFacebookAdsFlow = ai.defineFlow(
       }
       
       // Validate data with Zod schema
-      const validatedAds = z.array(Ad).safeParse(data.data);
+      const validatedAds = z.array(AdSchema).safeParse(data.data);
 
       if (!validatedAds.success) {
         console.error("Facebook API data validation error:", validatedAds.error);

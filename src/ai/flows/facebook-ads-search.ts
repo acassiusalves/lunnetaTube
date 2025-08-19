@@ -86,6 +86,7 @@ const searchFacebookAdsFlow = ai.defineFlow(
         search_terms: keyword,
         ad_type: 'ALL',
         ad_active_status: 'ALL',
+        ad_reached_countries: "['BR']",
         limit: '25',
         fields: [
           'id', 'ad_creation_time', 'ad_creative_bodies', 'ad_creative_link_captions',

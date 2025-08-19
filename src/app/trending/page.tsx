@@ -27,6 +27,42 @@ export type VideoCategory = z.infer<typeof VideoCategorySchema>;
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
 
+const categoryTranslations: { [key: string]: string } = {
+    "Film & Animation": "Filme & Animação",
+    "Autos & Vehicles": "Automóveis & Veículos",
+    "Music": "Música",
+    "Pets & Animals": "Animais de Estimação",
+    "Sports": "Esportes",
+    "Travel & Events": "Viagens & Eventos",
+    "Gaming": "Jogos",
+    "People & Blogs": "Pessoas & Blogs",
+    "Comedy": "Comédia",
+    "Entertainment": "Entretenimento",
+    "News & Politics": "Notícias & Política",
+    "Howto & Style": "Como Fazer & Estilo",
+    "Education": "Educação",
+    "Science & Technology": "Ciência & Tecnologia",
+    "Nonprofits & Activism": "Organizações sem fins lucrativos & Ativismo",
+    "Movies": "Filmes",
+    "Anime/Animation": "Anime/Animação",
+    "Action/Adventure": "Ação/Aventura",
+    "Classics": "Clássicos",
+    "Documentary": "Documentário",
+    "Drama": "Drama",
+    "Family": "Família",
+    "Foreign": "Estrangeiro",
+    "Horror": "Terror",
+    "Sci-Fi/Fantasy": "Ficção Científica/Fantasia",
+    "Thriller": "Suspense",
+    "Shorts": "Curtas",
+    "Shows": "Programas",
+    "Trailers": "Trailers"
+};
+
+const translateCategory = (title: string): string => {
+    return categoryTranslations[title] || title;
+};
+
 export default function TrendingPage() {
   const { toast } = useToast();
 
@@ -63,7 +99,11 @@ export default function TrendingPage() {
             toast({ title: "Erro ao carregar categorias", description: result.error, variant: 'destructive' });
             setCategories([]);
         } else {
-            setCategories(result.categories || []);
+            const translatedCategories = result.categories?.map(cat => ({
+                ...cat,
+                title: translateCategory(cat.title)
+            })) || [];
+            setCategories(translatedCategories);
         }
     } catch (e: any) {
         toast({ title: "Erro ao carregar categorias", description: e.message, variant: 'destructive' });
@@ -243,5 +283,3 @@ export default function TrendingPage() {
     </div>
   );
 }
-
-    

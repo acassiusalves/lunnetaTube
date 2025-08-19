@@ -1,15 +1,16 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { categories, countries } from '@/lib/data';
+import { countries } from '@/lib/data';
 import { Loader2, Search, Terminal } from 'lucide-react';
 import { searchYoutubeVideos } from '@/ai/flows/youtube-search';
+import { fetchVideoCategories, type VideoCategory } from '@/ai/flows/fetch-video-categories';
 import { Video, mapApiToVideo } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -23,26 +24,55 @@ export default function TrendingPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [categories, setCategories] = useState<VideoCategory[]>([]);
   const [nextPageToken, setNextPageToken] = useState<string | undefined>();
   
   const [country, setCountry] = useState('br');
-  const [category, setCategory] = useState<string | undefined>();
+  const [category, setCategory] = useState<string>('all');
   const [excludeShorts, setExcludeShorts] = useState(true);
 
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'views', direction: 'descending' });
   
-  // onFetchComments and isLoadingComments are not used for trending page for now
-  // as the focus is on discovery.
   const handleFetchComments = async (videoId: string) => { return; };
   const isLoadingComments = false;
+  
+  const getApiKey = () => typeof window !== 'undefined' ? localStorage.getItem(API_KEY_STORAGE_ITEM) : null;
+
+  const loadCategories = useCallback(async (regionCode: string) => {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+        setError('Chave de API do YouTube não encontrada.');
+        return;
+    }
+    setIsLoadingCategories(true);
+    setCategory('all'); // Reset category when country changes
+    try {
+        const result = await fetchVideoCategories({ apiKey, regionCode });
+        if (result.error) {
+            toast({ title: "Erro ao carregar categorias", description: result.error, variant: 'destructive' });
+            setCategories([]);
+        } else {
+            setCategories(result.categories || []);
+        }
+    } catch (e: any) {
+        toast({ title: "Erro ao carregar categorias", description: e.message, variant: 'destructive' });
+    } finally {
+        setIsLoadingCategories(false);
+    }
+  }, [toast]);
+  
+  useEffect(() => {
+    loadCategories(country);
+  }, [country, loadCategories]);
 
 
   const getSearchParams = (pageToken?: string) => ({
     type: 'trending' as const,
     country,
-    category,
+    category: category === 'all' ? undefined : category,
     excludeShorts,
     pageToken,
   });
@@ -57,7 +87,7 @@ export default function TrendingPage() {
     }
     setError(null);
 
-    const apiKey = localStorage.getItem(API_KEY_STORAGE_ITEM);
+    const apiKey = getApiKey();
     if (!apiKey) {
       setError('Chave de API do YouTube não encontrada. Por favor, adicione-a na página de Configurações.');
       setIsLoading(false);
@@ -137,14 +167,17 @@ export default function TrendingPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">Categoria</Label>
-                  <Select value={category} onValueChange={setCategory}>
+                  <Select value={category} onValueChange={setCategory} disabled={isLoadingCategories}>
                     <SelectTrigger id="category">
-                      <SelectValue placeholder="Todas as categorias" />
+                      <div className="flex items-center gap-2">
+                        {isLoadingCategories && <Loader2 className="h-4 w-4 animate-spin" />}
+                        <SelectValue placeholder="Todas as categorias" />
+                      </div>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas as categorias</SelectItem>
                       {categories.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                        <SelectItem key={cat.id} value={cat.id}>{cat.title}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -202,3 +235,5 @@ export default function TrendingPage() {
     </div>
   );
 }
+
+    

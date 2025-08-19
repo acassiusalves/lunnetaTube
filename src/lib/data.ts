@@ -1,5 +1,4 @@
 
-
 export const countries = [
   { value: 'br', label: 'Brasil', language: 'Brazilian Portuguese' },
   { value: 'us', label: 'Estados Unidos', language: 'English' },
@@ -108,7 +107,7 @@ export const mapApiToVideo = (apiVideo: any): Video => {
     publishedAt: apiVideo.snippet.publishedAt.split('T')[0],
     videoUrl: `https://www.youtube.com/watch?v=${apiVideo.id.videoId || apiVideo.id}`,
     channel: apiVideo.snippet.channelTitle,
-    category: categories.find(c => c.value === apiVideo.snippet.categoryId)?.label || 'Desconhecido',
+    category: 'Desconhecido', // This will be updated later or can be fetched with categories
     isShort: totalSeconds <= 60,
     dataAiHint: dataAiHints[apiVideo.id.videoId || apiVideo.id] || 'youtube video',
     commentsData: apiVideo.commentsData || [],

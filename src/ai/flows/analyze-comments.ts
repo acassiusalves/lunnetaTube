@@ -41,6 +41,7 @@ export async function analyzeComments(input: AnalyzeCommentsInput): Promise<Anal
 const defaultPromptText = `You are an AI assistant that analyzes video comments to understand the overall sentiment, identify key themes, and generate potential product ideas. 
 Analyze the comments and provide a summary, the overall sentiment, key themes, and a list of 2-3 low-ticket product ideas.
 Your entire response must be a valid JSON object that conforms to the output schema.
+Your response must be in Brazilian Portuguese.
 `;
 
 const analyzeCommentsFlow = ai.defineFlow(
@@ -52,10 +53,10 @@ const analyzeCommentsFlow = ai.defineFlow(
   async ({ comments, prompt: customPrompt, model }) => {
     
     // Determine the prompt to use. If a custom prompt is provided, use it. Otherwise, use the default.
-    const basePrompt = customPrompt || defaultPromptText;
-    
-    // Ensure the Portuguese instruction is always added.
-    const finalPrompt = `${basePrompt}\n\nSua resposta deve estar em Português do Brasil.`;
+    // The final instruction for Brazilian Portuguese is included in both cases.
+    const finalPrompt = customPrompt 
+      ? `${customPrompt}\n\nSua resposta deve estar em Português do Brasil.`
+      : defaultPromptText;
 
     const {output} = await ai.generate({
       prompt: `${finalPrompt}\n\nComments:\n${comments}`,

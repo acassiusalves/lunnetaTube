@@ -71,9 +71,9 @@ const searchFacebookAdsFlow = ai.defineFlow(
       const searchParams = new URLSearchParams({
         access_token: accessToken,
         search_terms: keyword,
-        ad_type: 'ALL',
+        ad_type: 'POLITICAL_AND_ISSUE_ADS', // Required for Brazil
         ad_active_status: 'ALL',
-        ad_reached_countries: JSON.stringify(['BR']),
+        ad_reached_countries: "['BR']",
         limit: '25',
         fields: [
           'id', 'ad_creation_time', 'ad_creative_bodies', 'ad_creative_link_captions',
@@ -90,7 +90,6 @@ const searchFacebookAdsFlow = ai.defineFlow(
         throw new Error(data.error?.message || 'Failed to search ads.');
       }
       
-      // Validate data with Zod schema
       const validatedAds = z.array(AdSchema).safeParse(data.data);
 
       if (!validatedAds.success) {

@@ -14,8 +14,7 @@ import { z } from 'genkit';
 import { URLSearchParams } from 'url';
 
 const FacebookAdsSearchInputSchema = z.object({
-  appId: z.string().describe('The Facebook App ID.'),
-  appSecret: z.string().describe('The Facebook App Secret.'),
+  accessToken: z.string().describe('The Facebook Access Token.'),
   keyword: z.string().describe('The keyword to search for in the ads library.'),
 });
 export type FacebookAdsSearchInput = z.infer<typeof FacebookAdsSearchInputSchema>;
@@ -61,26 +60,14 @@ const FacebookAdsSearchOutputSchema = z.object({
 });
 export type FacebookAdsSearchOutput = z.infer<typeof FacebookAdsSearchOutputSchema>;
 
-// Helper function to get an access token
-async function getAccessToken(appId: string, appSecret: string): Promise<string> {
-  const response = await fetch(`https://graph.facebook.com/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&grant_type=client_credentials`);
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error?.message || 'Failed to fetch access token');
-  }
-  return data.access_token;
-}
-
 const searchFacebookAdsFlow = ai.defineFlow(
   {
     name: 'searchFacebookAdsFlow',
     inputSchema: FacebookAdsSearchInputSchema,
     outputSchema: FacebookAdsSearchOutputSchema,
   },
-  async ({ appId, appSecret, keyword }) => {
+  async ({ accessToken, keyword }) => {
     try {
-      const accessToken = await getAccessToken(appId, appSecret);
-      
       const searchParams = new URLSearchParams({
         access_token: accessToken,
         search_terms: keyword,

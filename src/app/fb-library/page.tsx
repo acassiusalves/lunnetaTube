@@ -12,8 +12,7 @@ import { searchFacebookAds, type Ad } from '@/ai/flows/facebook-ads-search';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 
-const FACEBOOK_APP_ID_STORAGE_ITEM = 'facebook_app_id';
-const FACEBOOK_APP_SECRET_STORAGE_ITEM = 'facebook_app_secret';
+const FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM = 'facebook_access_token';
 
 const AdCard = ({ ad }: { ad: Ad }) => {
   const formatImpressions = (impressions: any) => {
@@ -75,14 +74,11 @@ export default function FBLibraryPage() {
   const [error, setError] = useState<string | null>(null);
   const [ads, setAds] = useState<Ad[]>([]);
 
-  const [appId, setAppId] = useState('');
-  const [appSecret, setAppSecret] = useState('');
+  const [accessToken, setAccessToken] = useState('');
 
    useEffect(() => {
-    const savedAppId = localStorage.getItem(FACEBOOK_APP_ID_STORAGE_ITEM);
-    const savedAppSecret = localStorage.getItem(FACEBOOK_APP_SECRET_STORAGE_ITEM);
-    if (savedAppId) setAppId(savedAppId);
-    if (savedAppSecret) setAppSecret(savedAppSecret);
+    const savedAccessToken = localStorage.getItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM);
+    if (savedAccessToken) setAccessToken(savedAccessToken);
   }, []);
 
 
@@ -91,8 +87,8 @@ export default function FBLibraryPage() {
       toast({ title: 'Digite uma palavra-chave para buscar.', variant: 'destructive' });
       return;
     }
-    if(!appId || !appSecret) {
-      setError("Credenciais da API do Facebook não encontradas. Por favor, adicione-as na página de Configurações.");
+    if(!accessToken) {
+      setError("Token de Acesso da API do Facebook não encontrado. Por favor, adicione-o na página de Configurações.");
       return;
     }
 
@@ -101,7 +97,7 @@ export default function FBLibraryPage() {
     setAds([]);
 
     try {
-      const result = await searchFacebookAds({ appId, appSecret, keyword });
+      const result = await searchFacebookAds({ accessToken, keyword });
       if (result.error) {
         setError(result.error);
       } else {

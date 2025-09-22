@@ -25,8 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 const API_KEY_STORAGE_ITEM = "youtube_api_key";
 const COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM = "comment_analysis_prompt";
 const AI_MODEL_STORAGE_ITEM = "ai_model";
-const FACEBOOK_APP_ID_STORAGE_ITEM = "facebook_app_id";
-const FACEBOOK_APP_SECRET_STORAGE_ITEM = "facebook_app_secret";
+const FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM = "facebook_access_token";
 
 
 const SettingsSkeleton = () => (
@@ -53,8 +52,7 @@ export default function SettingsPage() {
   const [apiKey, setApiKey] = useState("");
   const [commentAnalysisPrompt, setCommentAnalysisPrompt] = useState("");
   const [aiModel, setAiModel] = useState("googleai/gemini-2.5-pro");
-  const [facebookAppId, setFacebookAppId] = useState("");
-  const [facebookAppSecret, setFacebookAppSecret] = useState("");
+  const [facebookAccessToken, setFacebookAccessToken] = useState("");
   const [isYouTubeConnected, setIsYouTubeConnected] = useState(false);
   const [isFacebookConnected, setIsFacebookConnected] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -78,16 +76,10 @@ export default function SettingsPage() {
       setAiModel(savedModel);
     }
     // Facebook
-    const savedFacebookAppId = localStorage.getItem(FACEBOOK_APP_ID_STORAGE_ITEM);
-    if (savedFacebookAppId) {
-      setFacebookAppId(savedFacebookAppId);
-    }
-     const savedFacebookAppSecret = localStorage.getItem(FACEBOOK_APP_SECRET_STORAGE_ITEM);
-    if (savedFacebookAppSecret) {
-      setFacebookAppSecret(savedFacebookAppSecret);
-    }
-    if(savedFacebookAppId && savedFacebookAppSecret) {
-        setIsFacebookConnected(true);
+    const savedFacebookAccessToken = localStorage.getItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM);
+    if (savedFacebookAccessToken) {
+      setFacebookAccessToken(savedFacebookAccessToken);
+      setIsFacebookConnected(true);
     }
 
   }, []);
@@ -113,17 +105,13 @@ export default function SettingsPage() {
     localStorage.setItem(AI_MODEL_STORAGE_ITEM, aiModel);
 
     // Save Facebook Credentials
-    if (facebookAppId) {
-        localStorage.setItem(FACEBOOK_APP_ID_STORAGE_ITEM, facebookAppId);
+    if (facebookAccessToken) {
+        localStorage.setItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM, facebookAccessToken);
+        setIsFacebookConnected(true);
     } else {
-        localStorage.removeItem(FACEBOOK_APP_ID_STORAGE_ITEM);
+        localStorage.removeItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM);
+        setIsFacebookConnected(false);
     }
-    if (facebookAppSecret) {
-        localStorage.setItem(FACEBOOK_APP_SECRET_STORAGE_ITEM, facebookAppSecret);
-    } else {
-        localStorage.removeItem(FACEBOOK_APP_SECRET_STORAGE_ITEM);
-    }
-    setIsFacebookConnected(!!(facebookAppId && facebookAppSecret));
 
 
     toast({
@@ -220,37 +208,27 @@ export default function SettingsPage() {
               )}
             </div>
             <CardDescription>
-              Insira suas credenciais da API do Facebook. Você pode obter as suas no{" "}
+              Insira seu token de acesso da API do Facebook. Você pode obter o seu no{" "}
               <Link
-                href="https://developers.facebook.com/apps/"
+                href="https://developers.facebook.com/tools/explorer/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold text-primary hover:underline"
               >
-                Painel de Aplicativos do Facebook
+                Graph API Explorer
               </Link>
               .
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="facebook-app-id">ID do Aplicativo</Label>
+              <Label htmlFor="facebook-access-token">Token de Acesso</Label>
               <Input
-                id="facebook-app-id"
-                type="text"
-                placeholder="Seu ID do Aplicativo do Facebook"
-                value={facebookAppId}
-                onChange={(e) => setFacebookAppId(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="facebook-app-secret">Chave Secreta do Aplicativo</Label>
-              <Input
-                id="facebook-app-secret"
+                id="facebook-access-token"
                 type="password"
-                placeholder="Sua Chave Secreta do Aplicativo do Facebook"
-                value={facebookAppSecret}
-                onChange={(e) => setFacebookAppSecret(e.target.value)}
+                placeholder="Seu token de acesso de longa duração"
+                value={facebookAccessToken}
+                onChange={(e) => setFacebookAccessToken(e.target.value)}
               />
             </div>
           </CardContent>

@@ -1,21 +1,14 @@
 
 'use server';
 
-/**
- * @fileOverview A flow for searching ads in the Facebook Ads Library.
- *
- * - searchFacebookAds - A function that searches for Facebook ads.
- * - FacebookAdsSearchInput - The input type for the searchFacebookAds function.
- * - FacebookAdsSearchOutput - The return type for the searchFacebookAds function.
- */
-
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { URLSearchParams } from 'url';
+import crypto from 'crypto';
 
 const FacebookAdsSearchInputSchema = z.object({
   accessToken: z.string().describe('The Facebook Access Token.'),
   keyword: z.string().describe('The keyword to search for in the ads library.'),
+  appSecret: z.string().describe('The Facebook App Secret.'),
 });
 export type FacebookAdsSearchInput = z.infer<typeof FacebookAdsSearchInputSchema>;
 
@@ -53,12 +46,40 @@ const AdSchema = z.object({
 });
 export type Ad = z.infer<typeof AdSchema>;
 
-
 const FacebookAdsSearchOutputSchema = z.object({
-  ads: z.array(AdSchema).optional().describe('An array of ad results.'),
-  error: z.string().optional().describe('An error message if the search fails.'),
+  ads: z.array(AdSchema).optional(),
+  error: z.string().optional(),
+  nextCursor: z.string().optional(), // paging.next
 });
 export type FacebookAdsSearchOutput = z.infer<typeof FacebookAdsSearchOutputSchema>;
+
+const FIELDS = [
+  'id',
+  'ad_creation_time',
+  'ad_creative_bodies',
+  'ad_creative_link_captions',
+  'ad_creative_link_descriptions',
+  'ad_creative_link_titles',
+  'ad_delivery_start_time',
+  'ad_snapshot_url',
+  'bylines',
+  'currency',
+  'delivery_by_region',
+  'estimated_audience_size',
+  'impressions',
+  'languages',
+  'page_id',
+  'page_name',
+  'publisher_platforms',
+  'spend',
+].join(',');
+
+const API_VERSION = 'v20.0';
+
+function buildAppSecretProof(accessToken: string, appSecret?: string) {
+  if (!appSecret) return undefined;
+  return crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
+}
 
 const searchFacebookAdsFlow = ai.defineFlow(
   {
@@ -66,38 +87,46 @@ const searchFacebookAdsFlow = ai.defineFlow(
     inputSchema: FacebookAdsSearchInputSchema,
     outputSchema: FacebookAdsSearchOutputSchema,
   },
-  async ({ accessToken, keyword }) => {
+  async ({ accessToken, keyword, appSecret }) => {
     try {
-      const searchParams = new URLSearchParams({
-        access_token: accessToken,
+      const token = accessToken.trim();
+      const appsecret_proof = buildAppSecretProof(token, appSecret);
+
+      const params = new URLSearchParams({
+        access_token: token,
         search_terms: keyword,
-        ad_type: 'POLITICAL_AND_ISSUE_ADS', // Required for Brazil
+        ad_type: 'POLITICAL_AND_ISSUE_ADS',
         ad_active_status: 'ALL',
-        ad_reached_countries: "['BR']",
+        ad_reached_countries: 'BR',
+        fields: FIELDS,
         limit: '25',
-        fields: [
-          'id', 'ad_creation_time', 'ad_creative_bodies', 'ad_creative_link_captions',
-          'ad_creative_link_descriptions', 'ad_creative_link_titles', 'ad_delivery_start_time',
-          'ad_snapshot_url', 'bylines', 'currency', 'delivery_by_region', 'estimated_audience_size',
-          'impressions', 'languages', 'page_id', 'page_name', 'publisher_platforms', 'spend'
-        ].join(','),
       });
 
-      const response = await fetch(`https://graph.facebook.com/v20.0/ads_archive?${searchParams.toString()}`);
-      const data = await response.json();
+      if (appsecret_proof) params.set('appsecret_proof', appsecret_proof);
 
-      if (!response.ok) {
-        throw new Error(data.error?.message || 'Failed to search ads.');
-      }
-      
-      const validatedAds = z.array(AdSchema).safeParse(data.data);
+      const url = `https://graph.facebook.com/${API_VERSION}/ads_archive?${params.toString()}`;
+      const res = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } });
+      const json = await res.json();
 
-      if (!validatedAds.success) {
-        console.error("Facebook API data validation error:", validatedAds.error);
-        throw new Error("Dados recebidos da API do Facebook não correspondem ao formato esperado.");
+      if (!res.ok) {
+        console.error('FB Ads Library ERROR', {
+          status: res.status,
+          error: json?.error,
+          url,
+        });
+        const message = json?.error?.message || 'Falha ao buscar no Ad Library.';
+        throw new Error(message);
       }
-      
-      return { ads: validatedAds.data };
+
+      const data = Array.isArray(json?.data) ? json.data : [];
+      const parsed = z.array(AdSchema).safeParse(data);
+      if (!parsed.success) {
+        console.error('Zod validation error:', parsed.error);
+        throw new Error('Formato inesperado retornado pela API do Facebook.');
+      }
+
+      const nextCursor = json?.paging?.next ?? undefined;
+      return { ads: parsed.data, nextCursor };
     } catch (e: any) {
       console.error('Error in searchFacebookAdsFlow:', e);
       return { error: `Erro na API do Facebook: ${e.message}` };

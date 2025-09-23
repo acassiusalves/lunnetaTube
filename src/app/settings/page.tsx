@@ -26,7 +26,6 @@ const API_KEY_STORAGE_ITEM = "youtube_api_key";
 const COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM = "comment_analysis_prompt";
 const AI_MODEL_STORAGE_ITEM = "ai_model";
 const FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM = "facebook_access_token";
-const FACEBOOK_APP_SECRET_STORAGE_ITEM = "facebook_app_secret";
 
 
 const SettingsSkeleton = () => (
@@ -54,7 +53,6 @@ export default function SettingsPage() {
   const [commentAnalysisPrompt, setCommentAnalysisPrompt] = useState("");
   const [aiModel, setAiModel] = useState("googleai/gemini-2.5-pro");
   const [facebookAccessToken, setFacebookAccessToken] = useState("");
-  const [facebookAppSecret, setFacebookAppSecret] = useState("");
   const [isYouTubeConnected, setIsYouTubeConnected] = useState(false);
   const [isFacebookConnected, setIsFacebookConnected] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -81,12 +79,6 @@ export default function SettingsPage() {
     const savedFacebookAccessToken = localStorage.getItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM);
     if (savedFacebookAccessToken) {
       setFacebookAccessToken(savedFacebookAccessToken);
-    }
-    const savedFacebookAppSecret = localStorage.getItem(FACEBOOK_APP_SECRET_STORAGE_ITEM);
-    if (savedFacebookAppSecret) {
-      setFacebookAppSecret(savedFacebookAppSecret);
-    }
-    if (savedFacebookAccessToken && savedFacebookAppSecret) {
       setIsFacebookConnected(true);
     }
 
@@ -115,18 +107,9 @@ export default function SettingsPage() {
     // Save Facebook Credentials
     if (facebookAccessToken) {
         localStorage.setItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM, facebookAccessToken);
-    } else {
-        localStorage.removeItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM);
-    }
-    if (facebookAppSecret) {
-        localStorage.setItem(FACEBOOK_APP_SECRET_STORAGE_ITEM, facebookAppSecret);
-    } else {
-        localStorage.removeItem(FACEBOOK_APP_SECRET_STORAGE_ITEM);
-    }
-
-    if (facebookAccessToken && facebookAppSecret) {
         setIsFacebookConnected(true);
     } else {
+        localStorage.removeItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM);
         setIsFacebookConnected(false);
     }
 
@@ -225,7 +208,7 @@ export default function SettingsPage() {
               )}
             </div>
             <CardDescription>
-              Insira seu token de acesso e a chave secreta do aplicativo. Você pode obter os seus no{" "}
+              Insira seu token de acesso. Você pode obter o seu no{" "}
               <Link
                 href="https://developers.facebook.com/tools/explorer/"
                 target="_blank"
@@ -234,7 +217,7 @@ export default function SettingsPage() {
               >
                 Graph API Explorer
               </Link>
-              {" "} e na página de configurações do seu aplicativo no Facebook.
+              . Certifique-se de gerar um token de acesso de longa duração.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -246,16 +229,6 @@ export default function SettingsPage() {
                 placeholder="Seu token de acesso de longa duração"
                 value={facebookAccessToken}
                 onChange={(e) => setFacebookAccessToken(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="facebook-app-secret">Chave Secreta do Aplicativo</Label>
-              <Input
-                id="facebook-app-secret"
-                type="password"
-                placeholder="Sua chave secreta do aplicativo do Facebook"
-                value={facebookAppSecret}
-                onChange={(e) => setFacebookAppSecret(e.target.value)}
               />
             </div>
           </CardContent>

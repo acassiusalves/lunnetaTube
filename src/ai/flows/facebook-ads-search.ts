@@ -8,7 +8,6 @@ import crypto from 'crypto';
 const FacebookAdsSearchInputSchema = z.object({
   accessToken: z.string().describe('The Facebook Access Token.'),
   keyword: z.string().describe('The keyword to search for in the ads library.'),
-  appSecret: z.string().describe('The Facebook App Secret.'),
 });
 export type FacebookAdsSearchInput = z.infer<typeof FacebookAdsSearchInputSchema>;
 
@@ -76,21 +75,15 @@ const FIELDS = [
 
 const API_VERSION = 'v20.0';
 
-function buildAppSecretProof(accessToken: string, appSecret?: string) {
-  if (!appSecret) return undefined;
-  return crypto.createHmac('sha256', appSecret).update(accessToken).digest('hex');
-}
-
 const searchFacebookAdsFlow = ai.defineFlow(
   {
     name: 'searchFacebookAdsFlow',
     inputSchema: FacebookAdsSearchInputSchema,
     outputSchema: FacebookAdsSearchOutputSchema,
   },
-  async ({ accessToken, keyword, appSecret }) => {
+  async ({ accessToken, keyword }) => {
     try {
       const token = accessToken.trim();
-      const appsecret_proof = buildAppSecretProof(token, appSecret);
 
       const params = new URLSearchParams({
         access_token: token,
@@ -101,8 +94,6 @@ const searchFacebookAdsFlow = ai.defineFlow(
         fields: FIELDS,
         limit: '25',
       });
-
-      if (appsecret_proof) params.set('appsecret_proof', appsecret_proof);
 
       const url = `https://graph.facebook.com/${API_VERSION}/ads_archive?${params.toString()}`;
       const res = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } });

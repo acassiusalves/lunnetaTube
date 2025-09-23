@@ -18,10 +18,17 @@ const FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM = 'facebook_access_token';
 const AdCard = ({ ad }: { ad: Ad }) => {
   const formatImpressions = (impressions: any) => {
     if (!impressions || !impressions.lower_bound) return 'N/A';
-    return `${impressions.lower_bound} - ${impressions.upper_bound}`;
+    // O schema agora retorna string, então tratamos como tal
+    const lower = parseInt(impressions.lower_bound, 10);
+    if (isNaN(lower)) return 'N/A';
+    if (impressions.upper_bound) {
+       return `${impressions.lower_bound} - ${impressions.upper_bound}`;
+    }
+    return `>= ${impressions.lower_bound}`;
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('pt-BR');
   }
 
@@ -30,10 +37,10 @@ const AdCard = ({ ad }: { ad: Ad }) => {
       <CardHeader>
         <div className="flex justify-between items-start">
             <div>
-                <CardTitle className="text-lg">{ad.page_name}</CardTitle>
-                <CardDescription>ID da Página: {ad.page_id}</CardDescription>
+                <CardTitle className="text-lg">{ad.page_name || 'Página não informada'}</CardTitle>
+                <CardDescription>Criado em: {formatDate(ad.ad_creation_time)}</CardDescription>
             </div>
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline" size="sm" disabled={!ad.ad_snapshot_url}>
                 <Link href={ad.ad_snapshot_url || '#'} target="_blank" rel="noopener noreferrer">
                     Ver Anúncio
                     <ExternalLink className="ml-2 h-4 w-4" />
@@ -44,24 +51,19 @@ const AdCard = ({ ad }: { ad: Ad }) => {
       <CardContent className="flex-grow space-y-4">
         <div className="space-y-1">
             <h4 className="font-semibold text-sm">Texto do Anúncio:</h4>
-            <p className="text-sm text-muted-foreground">{ad.ad_creative_bodies?.[0] || 'N/A'}</p>
+            <p className="text-sm text-muted-foreground">{ad.ad_creative_bodies?.[0] || 'Não disponível'}</p>
         </div>
-        <div className="space-y-1">
-            <h4 className="font-semibold text-sm">Título do Link:</h4>
-            <p className="text-sm text-muted-foreground">{ad.ad_creative_link_titles?.[0] || 'N/A'}</p>
-        </div>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><span className="font-semibold">Início:</span> {ad.ad_delivery_start_time ? formatDate(ad.ad_delivery_start_time) : 'N/A'}</div>
+        <div className="grid grid-cols-1 gap-4 text-sm">
             <div><span className="font-semibold">Impressões:</span> {formatImpressions(ad.impressions)}</div>
-            <div><span className="font-semibold">Moeda:</span> {ad.currency || 'N/A'}</div>
-            <div><span className="font-semibold">Gasto:</span> {ad.spend?.lower_bound} - {ad.spend?.upper_bound}</div>
         </div>
-         <div>
-            <h4 className="font-semibold text-sm mb-2">Plataformas:</h4>
-            <div className="flex flex-wrap gap-2">
-                {ad.publisher_platforms?.map(p => <Badge key={p} variant="secondary">{p}</Badge>)}
+         {ad.publisher_platforms && ad.publisher_platforms.length > 0 && (
+            <div>
+                <h4 className="font-semibold text-sm mb-2">Plataformas:</h4>
+                <div className="flex flex-wrap gap-2">
+                    {ad.publisher_platforms?.map(p => <Badge key={p} variant="secondary">{p}</Badge>)}
+                </div>
             </div>
-        </div>
+         )}
       </CardContent>
     </Card>
   )
@@ -80,7 +82,7 @@ export default function FBLibraryPage() {
 
    useEffect(() => {
     const savedAccessToken = localStorage.getItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM);
-    if (savedAccessToken) setAccessToken(savedAccessToken);
+    if (savedAccessToken) setAccessToken(savedAccessToken.trim());
   }, []);
 
 
@@ -89,7 +91,8 @@ export default function FBLibraryPage() {
       toast({ title: 'Digite uma palavra-chave para buscar.', variant: 'destructive' });
       return;
     }
-    if(!accessToken) {
+    const token = accessToken.trim();
+    if(!token) {
       setError("Token de Acesso da API do Facebook não encontrado. Por favor, adicione-o na página de Configurações.");
       return;
     }
@@ -99,13 +102,13 @@ export default function FBLibraryPage() {
     setAds([]);
 
     try {
-      const result = await searchFacebookAds({ accessToken, keyword });
+      const result = await searchFacebookAds({ accessToken: token, keyword });
       if (result.error) {
         setError(result.error);
       } else {
         setAds(result.ads || []);
         if(!result.ads || result.ads.length === 0){
-            toast({title: "Nenhum resultado", description: "Nenhum anúncio encontrado para esta palavra-chave."})
+            toast({title: "Nenhum resultado", description: "Nenhum anúncio encontrado para esta palavra-chave. Lembre-se que no Brasil, a busca é focada em anúncios de temas sociais ou políticos."})
         }
       }
     } catch (e: any) {
@@ -136,7 +139,7 @@ export default function FBLibraryPage() {
             <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="flex gap-4">
               <Input
                 id="keyword"
-                placeholder="ex: 'curso de marketing digital'"
+                placeholder="ex: 'educação financeira'"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 className="flex-grow"

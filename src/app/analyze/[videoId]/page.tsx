@@ -176,7 +176,7 @@ export default function AnalyzeVideoPage() {
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
         <Button asChild variant="outline" size="sm">
-            <Link href="/">
+            <Link href="/buscador-youtube">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Voltar ao Painel
             </Link>

@@ -83,7 +83,7 @@ export default function ProductModelingPage() {
         other: 'Outro'
     };
     
-    const backHref = videoId ? `/analyze/${videoId}` : '/';
+    const backHref = videoId ? `/analyze/${videoId}` : '/buscador-youtube';
 
     return (
         <div className="container mx-auto p-4 sm:p-6 lg:p-8">

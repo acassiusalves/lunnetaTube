@@ -35,11 +35,11 @@ export default function RootLayout({
             <div className="flex min-h-screen w-full flex-col">
               <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm md:px-6 z-50">
                 <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-                  <Link href="/" className="flex items-center gap-2 text-lg font-semibold md:text-base">
+                  <Link href="/buscador-youtube" className="flex items-center gap-2 text-lg font-semibold md:text-base">
                     <Logo />
                     <span className="sr-only">Analisador de Mercado</span>
                   </Link>
-                  <Link href="/" className="text-muted-foreground transition-colors hover:text-foreground">
+                  <Link href="/buscador-youtube" className="text-muted-foreground transition-colors hover:text-foreground">
                     Painel
                   </Link>
                   <Link href="/trending" className="text-muted-foreground transition-colors hover:text-foreground">
@@ -53,7 +53,7 @@ export default function RootLayout({
                   </Link>
                    <Link href="/settings" className="text-muted-foreground transition-colors hover:text-foreground">
                     Configurações
-                  </Link>
+                   </Link>
                 </nav>
                 <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
                     <div className="ml-auto flex-1 sm:flex-initial">

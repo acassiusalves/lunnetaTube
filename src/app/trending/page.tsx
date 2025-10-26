@@ -1,17 +1,27 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries } from '@/lib/data';
-import { Loader2, Search, Terminal } from 'lucide-react';
+import { LATAM_COUNTRIES, getLanguageByCountry } from '@/lib/latam-config';
+import { fetchTrendingLatam } from '@/ai/flows/fetch-trending-latam';
+import { MultiSelectCountries } from '@/components/ui/multi-select-countries';
+import { Loader2, Search, Terminal, Sparkles } from 'lucide-react';
 import { searchYoutubeVideos } from '@/ai/flows/youtube-search';
 import { fetchVideoCategories } from '@/ai/flows/fetch-video-categories';
+import { fetchTopComments } from '@/ai/flows/fetch-comments';
+import { analyzeVideoPotential } from '@/ai/flows/analyze-video-potential';
 import { Video, mapApiToVideo } from '@/lib/data';
+import { analyzeComments } from '@/lib/comment-analyzer';
+import { addInfoproductScore } from '@/lib/infoproduct-score';
+import { analyzeTrends, type TrendAnalysis } from '@/lib/trends-analyzer';
+import { TrendsPanel } from '@/components/dashboard/trends-panel';
+import { LoadingState } from '@/components/dashboard/loading-state';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { VideoTable, type SortConfig } from '@/components/dashboard/video-table';
@@ -26,6 +36,12 @@ export type VideoCategory = z.infer<typeof VideoCategorySchema>;
 
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
+
+type LoadingStatus = {
+  active: boolean;
+  message: string;
+  progress: number;
+};
 
 const categoryTranslations: { [key: string]: string } = {
     "Film & Animation": "Filme & Animação",
@@ -69,21 +85,68 @@ export default function TrendingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<LoadingStatus>({ active: false, message: '', progress: 0 });
   const [error, setError] = useState<string | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
   const [categories, setCategories] = useState<VideoCategory[]>([]);
   const [nextPageToken, setNextPageToken] = useState<string | undefined>();
-  
-  const [country, setCountry] = useState('br');
+  const [loadingCommentVideoId, setLoadingCommentVideoId] = useState<string | null>(null);
+  const [showTrends, setShowTrends] = useState(false);
+  const [trendAnalysis, setTrendAnalysis] = useState<TrendAnalysis | null>(null);
+
+  const [selectedCountries, setSelectedCountries] = useState<string[]>(['BR']);
   const [category, setCategory] = useState<string>('all');
   const [excludeShorts, setExcludeShorts] = useState(true);
+  const [isMultiCountry, setIsMultiCountry] = useState(false);
 
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'views', direction: 'descending' });
-  
-  const handleFetchComments = async (videoId: string) => { return; };
-  const isLoadingComments = false;
-  
+
   const getApiKey = () => typeof window !== 'undefined' ? localStorage.getItem(API_KEY_STORAGE_ITEM) : null;
+
+  // Função para buscar e analisar comentários de um vídeo
+  const handleFetchComments = async (videoId: string) => {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      toast({ title: "Chave de API necessária", description: "Configure sua chave de API do YouTube", variant: 'destructive' });
+      return;
+    }
+
+    setLoadingCommentVideoId(videoId);
+
+    try {
+      const result = await fetchTopComments({ videoId, apiKey, maxResults: 100 });
+
+      if (result.error) {
+        toast({ title: "Erro ao buscar comentários", description: result.error, variant: 'destructive' });
+        return;
+      }
+
+      const comments = result.comments || [];
+      const commentAnalysis = analyzeComments(comments);
+
+      setVideos(prev => prev.map(v => {
+        if (v.id === videoId) {
+          const videoWithComments = { ...v, commentAnalysis, commentsData: comments };
+          return addInfoproductScore(videoWithComments);
+        }
+        return v;
+      }));
+
+      toast({ title: "Comentários analisados", description: `${comments.length} comentários processados` });
+    } catch (e: any) {
+      toast({ title: "Erro", description: e.message, variant: 'destructive' });
+    } finally {
+      setLoadingCommentVideoId(null);
+    }
+  };
+
+  // Atualizar isMultiCountry quando seleção mudar
+  useEffect(() => {
+    setIsMultiCountry(selectedCountries.length > 1);
+    if (selectedCountries.length > 1) {
+      setCategory('all'); // Forçar "Todas" quando multi-país
+    }
+  }, [selectedCountries]);
 
   const loadCategories = useCallback(async (regionCode: string) => {
     const apiKey = getApiKey();
@@ -111,19 +174,14 @@ export default function TrendingPage() {
         setIsLoadingCategories(false);
     }
   }, [toast]);
-  
+
   useEffect(() => {
-    loadCategories(country);
-  }, [country, loadCategories]);
+    // Carregar categorias do primeiro país selecionado
+    if (selectedCountries.length > 0) {
+      loadCategories(selectedCountries[0]);
+    }
+  }, [selectedCountries, loadCategories]);
 
-
-  const getSearchParams = (pageToken?: string) => ({
-    type: 'trending' as const,
-    country,
-    category: category === 'all' ? undefined : category,
-    excludeShorts,
-    pageToken,
-  });
 
   const handleSearch = async (isLoadMore = false) => {
     if (isLoadMore) {
@@ -132,6 +190,7 @@ export default function TrendingPage() {
       setIsLoading(true);
       setVideos([]);
       setNextPageToken(undefined);
+      setShowTrends(false); // Reset trends
     }
     setError(null);
 
@@ -144,21 +203,165 @@ export default function TrendingPage() {
     }
 
     try {
-      const params = getSearchParams(isLoadMore ? nextPageToken : undefined);
-      const result = await searchYoutubeVideos({ ...params, apiKey });
-      if (result.error) {
-        setError(result.error);
-        setVideos([]);
+      if (selectedCountries.length > 1) {
+        // BUSCA MULTI-PAÍS (LATAM)
+        const countries = selectedCountries.map(code => ({
+          code,
+          lang: getLanguageByCountry(code)
+        }));
+
+        const result = await fetchTrendingLatam({
+          apiKey,
+          countries,
+          excludeShorts,
+          category: category === 'all' ? undefined : category,
+        });
+
+        if (result.errors.length > 0) {
+          toast({
+            title: "Alguns países falharam",
+            description: result.errors.join(', '),
+            variant: 'destructive'
+          });
+        }
+
+        // Consolidar vídeos de todos os países
+        const allVideos = result.results.flatMap(countryResult =>
+          countryResult.videos.map((video: any) => ({
+            ...mapApiToVideo(video),
+            sourceCountry: countryResult.country, // Adicionar país de origem
+            sourceCountryFlag: countryResult.flag,
+          }))
+        );
+
+        setVideos(allVideos);
+        setNextPageToken(undefined); // Não suporta paginação multi-país por enquanto
+
+        toast({
+          title: "Busca LATAM concluída!",
+          description: `${result.totalVideos} vídeos de ${result.countriesProcessed} países`
+        });
       } else {
-        const newVideos = result.videos?.map(mapApiToVideo) || [];
-        setVideos(prev => isLoadMore ? [...prev, ...newVideos] : newVideos);
-        setNextPageToken(result.nextPageToken);
+        // BUSCA SINGLE-PAÍS (original)
+        const result = await searchYoutubeVideos({
+          type: 'trending',
+          country: selectedCountries[0],
+          relevanceLanguage: getLanguageByCountry(selectedCountries[0]),
+          category: category === 'all' ? undefined : category,
+          excludeShorts,
+          pageToken: isLoadMore ? nextPageToken : undefined,
+          apiKey,
+        });
+
+        if (result.error) {
+          setError(result.error);
+          setVideos([]);
+        } else {
+          const newVideos = result.videos?.map((video: any) => ({
+            ...mapApiToVideo(video),
+            sourceCountry: selectedCountries[0],
+            sourceCountryFlag: LATAM_COUNTRIES.find(c => c.value === selectedCountries[0])?.flag || '🌎',
+          })) || [];
+
+          setVideos(prev => isLoadMore ? [...prev, ...newVideos] : newVideos);
+          setNextPageToken(result.nextPageToken);
+        }
       }
     } catch (e: any) {
       setError(e.message || 'Ocorreu um erro ao buscar os vídeos.');
     } finally {
       setIsLoading(false);
       setIsLoadingMore(false);
+    }
+  };
+
+  // Função para analisar automaticamente todos os vídeos
+  const analyzeAllVideos = async () => {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      toast({ title: "Chave de API necessária", description: "Configure sua chave de API do YouTube", variant: 'destructive' });
+      return;
+    }
+
+    if (videos.length === 0) {
+      toast({ title: "Nenhum vídeo", description: "Busque vídeos trending primeiro", variant: 'destructive' });
+      return;
+    }
+
+    setLoadingStatus({ active: true, message: 'Analisando vídeos com IA...', progress: 10 });
+    const updatedVideos = [...videos];
+
+    try {
+      // Step 1: Análise com IA (identifica vídeos com alto potencial)
+      const videosForAnalysis = updatedVideos.map(v => ({
+        id: v.id,
+        title: v.title,
+        description: v.snippet?.description || '',
+      }));
+
+      const analysisResult = await analyzeVideoPotential({
+        videos: videosForAnalysis,
+        keyword: `trending ${category !== 'all' ? category : ''} videos in ${country}`
+      });
+
+      if (analysisResult.highPotentialVideoIds) {
+        updatedVideos.forEach((video, index) => {
+          updatedVideos[index] = {
+            ...video,
+            hasHighPotential: analysisResult.highPotentialVideoIds.includes(video.id),
+          };
+        });
+        setVideos([...updatedVideos]);
+      }
+
+      // Step 2: Buscar e analisar comentários
+      setLoadingStatus({ active: true, message: 'Buscando comentários...', progress: 30 });
+
+      for (let i = 0; i < updatedVideos.length; i++) {
+        const video = updatedVideos[i];
+        const progress = 30 + Math.round((i / updatedVideos.length) * 60);
+
+        setLoadingStatus({
+          active: true,
+          message: `Analisando vídeo ${i + 1} de ${updatedVideos.length}...`,
+          progress
+        });
+
+        // Buscar comentários
+        const result = await fetchTopComments({ videoId: video.id, apiKey, maxResults: 100 });
+
+        if (!result.error && result.comments) {
+          const comments = result.comments;
+          const commentAnalysis = analyzeComments(comments);
+
+          updatedVideos[i] = {
+            ...video,
+            commentAnalysis,
+            commentsData: comments
+          };
+
+          updatedVideos[i] = addInfoproductScore(updatedVideos[i]);
+        }
+
+        // Atualizar UI progressivamente
+        setVideos([...updatedVideos]);
+      }
+
+      // Step 3: Calcular análise de tendências
+      setLoadingStatus({ active: true, message: 'Calculando insights de tendências...', progress: 95 });
+      const trends = analyzeTrends(updatedVideos);
+      setTrendAnalysis(trends);
+      setShowTrends(true);
+
+      setLoadingStatus({ active: false, message: '', progress: 100 });
+      toast({
+        title: "Análise completa!",
+        description: `${updatedVideos.length} vídeos analisados com sucesso`
+      });
+    } catch (e: any) {
+      toast({ title: "Erro na análise", description: e.message, variant: 'destructive' });
+    } finally {
+      setLoadingStatus({ active: false, message: '', progress: 0 });
     }
   };
 
@@ -169,15 +372,27 @@ export default function TrendingPage() {
     }
     setSortConfig({ key, direction });
   };
-  
-  const sortedVideos = [...videos].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    const aValue = a[sortConfig.key];
-    const bValue = b[sortConfig.key];
-    if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-    if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-    return 0;
-  });
+
+  const sortedVideos = useMemo(() => {
+    const sorted = [...videos].sort((a, b) => {
+      if (!sortConfig.key) return 0;
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+      if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+      return 0;
+    });
+
+    // Priorizar vídeos com score alto (oportunidades de ouro)
+    const withScore = sorted.filter(v => v.infoproductScore && v.infoproductScore >= 65);
+    const withoutScore = sorted.filter(v => !v.infoproductScore || v.infoproductScore < 65);
+
+    if (sortConfig.key === 'infoproductScore' || sortConfig.key === 'views') {
+      return [...withScore, ...withoutScore];
+    }
+
+    return sorted;
+  }, [videos, sortConfig]);
 
 
   return (
@@ -199,23 +414,33 @@ export default function TrendingPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="space-y-6">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="country-trending">País</Label>
-                  <Select value={country} onValueChange={setCountry}>
-                    <SelectTrigger id="country-trending">
-                      <SelectValue placeholder="Selecione um país" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {countries.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="countries-latam">
+                    Países LATAM
+                    {isMultiCountry && (
+                      <span className="ml-2 text-xs font-normal text-orange-600">
+                        🌎 Modo Multi-País Ativo
+                      </span>
+                    )}
+                  </Label>
+                  <MultiSelectCountries
+                    countries={LATAM_COUNTRIES}
+                    selectedCountries={selectedCountries}
+                    onSelectionChange={setSelectedCountries}
+                    placeholder="Selecione 1 ou mais países..."
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">Categoria</Label>
-                  <Select value={category} onValueChange={setCategory} disabled={isLoadingCategories}>
+                  <Label htmlFor="category">
+                    Categoria
+                    {isMultiCountry && (
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        (desabilitado em multi-país)
+                      </span>
+                    )}
+                  </Label>
+                  <Select value={category} onValueChange={setCategory} disabled={isLoadingCategories || isMultiCountry}>
                     <SelectTrigger id="category">
                       <div className="flex items-center gap-2">
                         {isLoadingCategories && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -236,14 +461,36 @@ export default function TrendingPage() {
                   <Checkbox id="exclude-shorts-trending" checked={excludeShorts} onCheckedChange={(c) => setExcludeShorts(c as boolean)} />
                   <Label htmlFor="exclude-shorts-trending" className="text-sm font-normal">Excluir Shorts</Label>
                 </div>
-                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
-                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                  Buscar Tendências
-                </Button>
+                <div className="flex gap-2 flex-wrap">
+                  <Button type="submit" disabled={isLoading} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                    Buscar Tendências
+                  </Button>
+                  {videos.length > 0 && (
+                    <Button
+                      type="button"
+                      onClick={analyzeAllVideos}
+                      disabled={loadingStatus.active}
+                      variant="secondary"
+                      className="w-full sm:w-auto"
+                    >
+                      {loadingStatus.active ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                      Analisar Todos
+                    </Button>
+                  )}
+                </div>
               </div>
             </form>
           </CardContent>
         </Card>
+
+        {loadingStatus.active && (
+          <Card>
+            <CardContent className="pt-6">
+              <LoadingState message={loadingStatus.message} progress={loadingStatus.progress} />
+            </CardContent>
+          </Card>
+        )}
 
         {error && (
             <Alert variant="destructive">
@@ -252,13 +499,20 @@ export default function TrendingPage() {
                 <AlertDescription>{error}</AlertDescription>
             </Alert>
         )}
+
+        {showTrends && trendAnalysis && (
+          <TooltipProvider>
+            <TrendsPanel analysis={trendAnalysis} totalVideos={videos.length} />
+          </TooltipProvider>
+        )}
         
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
             <TooltipProvider>
-                <VideoTable 
-                    videos={sortedVideos} 
+                <VideoTable
+                    videos={sortedVideos}
                     onFetchComments={handleFetchComments}
-                    isLoadingComments={isLoadingComments}
+                    isLoadingComments={!!loadingCommentVideoId}
+                    loadingCommentVideoId={loadingCommentVideoId}
                     sortConfig={sortConfig}
                     onSort={handleSort}
                 />

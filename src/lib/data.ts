@@ -35,12 +35,22 @@ export interface SearchParams {
   excludeShorts?: boolean;
   category?: string;
   pageToken?: string;
+  publishedAfter?: string; // ISO 8601 format
+  publishedBefore?: string; // ISO 8601 format
+  order?: 'relevance' | 'date' | 'rating' | 'viewCount' | 'title';
+}
+
+export interface ChannelStats {
+  subscriberCount: number;
+  viewCount: number;
+  videoCount: number;
+  avgViewsPerVideo: number;
 }
 
 export interface Video {
   id: string;
   title: string;
-  snippet: any; 
+  snippet: any;
   views: number;
   likes: number;
   comments: number;
@@ -48,18 +58,56 @@ export interface Video {
   publishedAt: string;
   videoUrl: string;
   channel: string;
+  channelId: string;
   category: string;
   isShort: boolean;
   dataAiHint: string;
   commentsData: CommentData[];
   tags: string[];
   hasHighPotential?: boolean;
+
+  // Origem LATAM (para busca multi-país)
+  sourceCountry?: string;       // Código do país (BR, MX, AR...)
+  sourceCountryFlag?: string;   // Emoji da bandeira
+
+  // Dados do canal
+  channelStats?: ChannelStats;
+
+  // Análise de comentários
+  commentAnalysis?: CommentAnalysis;
+
+  // Métricas calculadas
+  engagementRate?: number; // (likes + comments) / views * 1000
+  viewsPerDay?: number; // views / dias desde publicação
+  commentsPerThousandViews?: number; // comments / views * 1000
+  channelPerformanceRatio?: number; // views do vídeo / média do canal
+
+  // Score de oportunidade de infoproduto
+  infoproductScore?: number; // 0-100
 }
 
 export interface CommentData {
   author: string;
   authorImageUrl: string;
   text: string;
+  likeCount?: number;
+  isQuestion?: boolean;
+  isMaterialRequest?: boolean;
+  isProblemStatement?: boolean;
+  questionType?: 'how-to' | 'what-is' | 'where-to-find' | 'general';
+  materialType?: 'planilha' | 'ebook' | 'template' | 'checklist' | 'lista' | 'receita' | 'curso' | 'general';
+}
+
+export interface CommentAnalysis {
+  totalComments: number;
+  questionsCount: number;
+  materialRequestsCount: number;
+  problemStatementsCount: number;
+  questionDensity: number; // % de comentários que são perguntas
+  materialRequestDensity: number; // % de comentários pedindo material
+  topQuestions: CommentData[];
+  topMaterialRequests: CommentData[];
+  unansweredQuestionsCount: number;
 }
 
 const dataAiHints: {[key: string]: string} = {
@@ -91,12 +139,45 @@ const formatDuration = (duration: string): string => {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
 
+export const calculateMetrics = (video: Video): Video => {
+  const views = video.views || 1; // Evitar divisão por zero
+  const likes = video.likes || 0;
+  const comments = video.comments || 0;
+
+  // Taxa de engajamento (por 1000 views)
+  const engagementRate = ((likes + comments) / views) * 1000;
+
+  // Views por dia
+  const publishedDate = new Date(video.publishedAt);
+  const today = new Date();
+  const daysSincePublished = Math.max(1, Math.floor((today.getTime() - publishedDate.getTime()) / (1000 * 60 * 60 * 24)));
+  const viewsPerDay = views / daysSincePublished;
+
+  // Comentários por 1000 views
+  const commentsPerThousandViews = (comments / views) * 1000;
+
+  // Performance relativa ao canal (será calculado depois quando tivermos dados do canal)
+  let channelPerformanceRatio = undefined;
+  if (video.channelStats?.avgViewsPerVideo) {
+    channelPerformanceRatio = views / video.channelStats.avgViewsPerVideo;
+  }
+
+  return {
+    ...video,
+    engagementRate,
+    viewsPerDay,
+    commentsPerThousandViews,
+    channelPerformanceRatio,
+  };
+};
+
 export const mapApiToVideo = (apiVideo: any): Video => {
   const duration = formatDuration(apiVideo.contentDetails?.duration);
-  const totalSeconds = (parseInt(apiVideo.contentDetails?.duration?.match(/(\d+)S/)?.[1] || '0', 10)) + 
+  const totalSeconds = (parseInt(apiVideo.contentDetails?.duration?.match(/(\d+)S/)?.[1] || '0', 10)) +
                      (parseInt(apiVideo.contentDetails?.duration?.match(/(\d+)M/)?.[1] || '0', 10) * 60) +
                      (parseInt(apiVideo.contentDetails?.duration?.match(/(\d+)H/)?.[1] || '0', 10) * 3600);
-  return {
+
+  const video: Video = {
     id: apiVideo.id.videoId || apiVideo.id,
     title: apiVideo.snippet.title,
     snippet: apiVideo.snippet,
@@ -107,13 +188,18 @@ export const mapApiToVideo = (apiVideo: any): Video => {
     publishedAt: apiVideo.snippet.publishedAt.split('T')[0],
     videoUrl: `https://www.youtube.com/watch?v=${apiVideo.id.videoId || apiVideo.id}`,
     channel: apiVideo.snippet.channelTitle,
+    channelId: apiVideo.snippet.channelId,
     category: 'Desconhecido', // This will be updated later or can be fetched with categories
     isShort: totalSeconds <= 60,
     dataAiHint: dataAiHints[apiVideo.id.videoId || apiVideo.id] || 'youtube video',
     commentsData: apiVideo.commentsData || [],
     tags: apiVideo.snippet.tags || [],
     hasHighPotential: apiVideo.hasHighPotential || false,
+    channelStats: apiVideo.channelStats,
   };
+
+  // Calcular métricas
+  return calculateMetrics(video);
 };
 
     

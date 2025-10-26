@@ -49,6 +49,7 @@ interface VideoTableProps {
   videos: Video[];
   onFetchComments: (videoId: string) => void;
   isLoadingComments: boolean;
+  loadingCommentVideoId?: string | null;
   sortConfig: SortConfig;
   onSort: (key: keyof Video) => void;
 }
@@ -106,6 +107,7 @@ export function VideoTable({
   videos,
   onFetchComments,
   isLoadingComments,
+  loadingCommentVideoId,
   sortConfig,
   onSort,
 }: VideoTableProps) {
@@ -114,7 +116,10 @@ export function VideoTable({
   const toggleRowExpansion = (videoId: string) => {
     const newExpandedRow = expandedRow === videoId ? null : videoId;
     setExpandedRow(newExpandedRow);
-    if (newExpandedRow) {
+    const video = videos.find(v => v.id === videoId);
+    const hasComments = video?.commentsData && video.commentsData.length > 0;
+
+    if (newExpandedRow && !hasComments) {
       onFetchComments(videoId);
     }
   };
@@ -169,9 +174,28 @@ export function VideoTable({
         <TableHeader>
           <TableRow>
             <TableHead className="w-[500px] min-w-[500px]">Título</TableHead>
+            <SortableHeader columnKey="infoproductScore">
+              <Tooltip>
+                <TooltipTrigger>Score</TooltipTrigger>
+                <TooltipContent>Score de Oportunidade de Infoproduto (0-100)</TooltipContent>
+              </Tooltip>
+            </SortableHeader>
+            <SortableHeader columnKey="sourceCountry">País</SortableHeader>
             <SortableHeader columnKey="views">Visualizações</SortableHeader>
             <SortableHeader columnKey="likes">Likes</SortableHeader>
             <SortableHeader columnKey="comments">Comentários</SortableHeader>
+            <SortableHeader columnKey="engagementRate">
+              <Tooltip>
+                <TooltipTrigger>Engaj.</TooltipTrigger>
+                <TooltipContent>Taxa de Engajamento (por 1000 views)</TooltipContent>
+              </Tooltip>
+            </SortableHeader>
+            <SortableHeader columnKey="viewsPerDay">
+              <Tooltip>
+                <TooltipTrigger>Views/dia</TooltipTrigger>
+                <TooltipContent>Visualizações por dia desde publicação</TooltipContent>
+              </Tooltip>
+            </SortableHeader>
             <SortableHeader columnKey="publishedAt">Data</SortableHeader>
             <TableHead className="w-[100px] text-center">Ações</TableHead>
           </TableRow>
@@ -179,7 +203,13 @@ export function VideoTable({
         <TableBody>
           {videos.map((video) => (
             <React.Fragment key={video.id}>
-              <TableRow>
+              <TableRow className={
+                video.infoproductScore && video.infoproductScore >= 80
+                  ? 'bg-gradient-to-r from-yellow-50 via-orange-50 to-yellow-50/50 border-l-4 border-l-yellow-500 hover:shadow-md transition-shadow'
+                  : video.infoproductScore && video.infoproductScore >= 65
+                  ? 'bg-gradient-to-r from-soft-green-50 via-soft-green-50/70 to-white border-l-4 border-l-soft-green-400 hover:shadow-md transition-shadow'
+                  : 'hover:bg-gray-50/50 transition-colors'
+              }>
                 <TableCell>
                   <div className="flex items-start gap-4">
                     <Link
@@ -196,11 +226,35 @@ export function VideoTable({
                       />
                     </Link>
                     <div className="space-y-1.5">
-                        <TruncatedText text={video.title} maxLength={60} asLink href={video.videoUrl} />
+                        <div className="flex items-start gap-2">
+                          <TruncatedText text={video.title} maxLength={60} asLink href={video.videoUrl} />
+                          {video.infoproductScore && video.infoproductScore >= 80 && (
+                            <span className="flex-shrink-0 px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[10px] font-bold rounded-full">
+                              🏆 OURO
+                            </span>
+                          )}
+                        </div>
                         <div className="space-y-1 text-xs text-muted-foreground">
                             <div className="flex items-center gap-1.5">
                                 <Clapperboard className="h-4 w-4 text-gray-500" />
-                                <span>{video.category}</span>
+                                <span>{video.channel}</span>
+                                {video.channelStats && (
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <span className="text-[10px] text-primary">({formatNumber(video.channelStats.subscriberCount)} subs)</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <div className="space-y-1">
+                                        <p><strong>Inscritos:</strong> {formatNumber(video.channelStats.subscriberCount)}</p>
+                                        <p><strong>Total de vídeos:</strong> {formatNumber(video.channelStats.videoCount)}</p>
+                                        <p><strong>Média de views:</strong> {formatNumber(Math.round(video.channelStats.avgViewsPerVideo))}</p>
+                                        {video.channelPerformanceRatio && (
+                                          <p><strong>Performance:</strong> {video.channelPerformanceRatio.toFixed(1)}x a média</p>
+                                        )}
+                                      </div>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <Clock className="h-4 w-4 text-gray-500" />
@@ -228,6 +282,56 @@ export function VideoTable({
                     </div>
                   </div>
                 </TableCell>
+                <TableCell className="text-center">
+                  {video.infoproductScore !== undefined ? (
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <div className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full font-bold text-sm shadow-sm hover:shadow-md transition-all ${
+                          video.infoproductScore >= 80 ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white' :
+                          video.infoproductScore >= 65 ? 'bg-gradient-to-r from-soft-green-400 to-soft-green-500 text-white' :
+                          video.infoproductScore >= 50 ? 'bg-gradient-to-r from-soft-blue-400 to-soft-blue-500 text-white' :
+                          video.infoproductScore >= 30 ? 'bg-gray-200 text-gray-700' :
+                          'bg-gray-100 text-gray-500'
+                        }`}>
+                          {video.infoproductScore}
+                          {video.infoproductScore >= 80 && <span className="ml-1">🏆</span>}
+                          {video.infoproductScore >= 65 && video.infoproductScore < 80 && <span className="ml-1">⭐</span>}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className="space-y-1 text-xs">
+                          <p className="font-bold">
+                            {video.infoproductScore >= 80 ? '🏆 OPORTUNIDADE DE OURO!' :
+                             video.infoproductScore >= 65 ? '⭐ Excelente oportunidade' :
+                             video.infoproductScore >= 50 ? 'Boa oportunidade' :
+                             video.infoproductScore >= 30 ? 'Oportunidade média' :
+                             'Oportunidade baixa'}
+                          </p>
+                          <p className="text-muted-foreground">Clique nos comentários para calcular o score</p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <div className="text-xs text-muted-foreground">-</div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Busque os comentários para calcular o score
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </TableCell>
+                <TableCell className="text-center">
+                  {video.sourceCountry ? (
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span className="text-lg">{video.sourceCountryFlag}</span>
+                      <span className="text-xs font-medium text-muted-foreground">{video.sourceCountry}</span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {formatNumber(video.views)}
                 </TableCell>
@@ -253,6 +357,30 @@ export function VideoTable({
                   </div>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
+                  <Tooltip>
+                    <TooltipTrigger>
+                      {video.engagementRate !== undefined ? video.engagementRate.toFixed(2) : '-'}
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {video.engagementRate !== undefined
+                        ? `${video.engagementRate.toFixed(2)} engajamentos por 1000 views`
+                        : 'Dados não disponíveis'}
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  <Tooltip>
+                    <TooltipTrigger>
+                      {video.viewsPerDay !== undefined ? formatNumber(Math.round(video.viewsPerDay)) : '-'}
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {video.viewsPerDay !== undefined
+                        ? `${formatNumber(Math.round(video.viewsPerDay))} views por dia`
+                        : 'Dados não disponíveis'}
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
                   {formatDate(video.publishedAt)}
                 </TableCell>
                 <TableCell className="text-center">
@@ -276,37 +404,128 @@ export function VideoTable({
               </TableRow>
               {expandedRow === video.id && (
                 <TableRow>
-                  <TableCell colSpan={6}>
-                    <Card className="bg-muted/50">
-                      <CardHeader>
-                          <CardTitle className="text-base">Comentários Relevantes</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {isLoadingComments && video.commentsData.length === 0 ? (
-                            <div className="flex items-center justify-center p-4">
-                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <TableCell colSpan={9}>
+                    <div className="space-y-4">
+                      {/* Análise de Comentários */}
+                      {video.commentAnalysis && (
+                        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+                          <CardHeader>
+                            <CardTitle className="text-base flex items-center gap-2">
+                              <Sparkles className="h-5 w-5 text-primary" />
+                              Análise de Oportunidade de Infoproduto
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                              <div className="text-center p-4 bg-gradient-to-br from-soft-blue-50 to-white rounded-lg border border-soft-blue-200 shadow-sm">
+                                <div className="text-3xl font-bold text-soft-blue-600">{video.commentAnalysis.questionsCount}</div>
+                                <div className="text-xs text-muted-foreground mt-1 font-medium">Perguntas</div>
+                                <div className="text-xs font-semibold text-soft-blue-600 mt-0.5">{video.commentAnalysis.questionDensity.toFixed(1)}%</div>
+                              </div>
+                              <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-white rounded-lg border border-orange-200 shadow-sm">
+                                <div className="text-3xl font-bold text-orange-600">{video.commentAnalysis.materialRequestsCount}</div>
+                                <div className="text-xs text-muted-foreground mt-1 font-medium">Pedidos de Material</div>
+                                <div className="text-xs font-semibold text-orange-600 mt-0.5">{video.commentAnalysis.materialRequestDensity.toFixed(1)}%</div>
+                              </div>
+                              <div className="text-center p-4 bg-gradient-to-br from-red-50 to-white rounded-lg border border-red-200 shadow-sm">
+                                <div className="text-3xl font-bold text-red-600">{video.commentAnalysis.problemStatementsCount}</div>
+                                <div className="text-xs text-muted-foreground mt-1 font-medium">Problemas/Dificuldades</div>
+                              </div>
+                              <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-white rounded-lg border border-yellow-200 shadow-sm">
+                                <div className="text-3xl font-bold text-yellow-600">{video.commentAnalysis.unansweredQuestionsCount}</div>
+                                <div className="text-xs text-muted-foreground mt-1 font-medium">Perguntas Não Respondidas</div>
+                              </div>
                             </div>
-                        ) : (
-                          <div className="space-y-4">
-                            {video.commentsData && video.commentsData.length > 0 ? (
-                              video.commentsData.map((comment, index) => (
-                                <div key={index} className="flex items-start gap-3 text-sm">
-                                  <Avatar className="h-8 w-8 border">
-                                    <img src={comment.authorImageUrl} alt={comment.author} data-ai-hint="user avatar" className="h-full w-full rounded-full object-cover" />
-                                  </Avatar>
-                                  <div className="flex-1">
-                                    <p className="font-semibold">{comment.author}</p>
-                                    <Comment text={comment.text} />
-                                  </div>
+
+                            {/* Top Pedidos de Material */}
+                            {video.commentAnalysis.topMaterialRequests.length > 0 && (
+                              <div className="mt-4 p-4 bg-gradient-to-br from-orange-50 to-orange-50/30 rounded-lg border border-orange-200 shadow-sm">
+                                <h4 className="text-sm font-semibold mb-3 text-orange-900 flex items-center gap-2">
+                                  <span className="text-base">🎯</span>
+                                  Top Pedidos de Material ({video.commentAnalysis.topMaterialRequests.length})
+                                </h4>
+                                <div className="space-y-2">
+                                  {video.commentAnalysis.topMaterialRequests.slice(0, 3).map((comment, idx) => (
+                                    <div key={idx} className="text-xs bg-white p-3 rounded border border-orange-100 hover:shadow-sm transition-shadow">
+                                      <span className="font-semibold text-gray-900">{comment.author}:</span>
+                                      <span className="ml-1 text-gray-700">{comment.text.substring(0, 150)}{comment.text.length > 150 ? '...' : ''}</span>
+                                      {comment.materialType && (
+                                        <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 rounded text-[10px] font-medium">
+                                          {comment.materialType}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
                                 </div>
-                              ))
-                            ) : (
-                                <p className="text-sm text-center text-muted-foreground">Nenhum comentário para exibir ou comentários desativados.</p>
+                              </div>
                             )}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+
+                            {/* Top Perguntas */}
+                            {video.commentAnalysis.topQuestions.length > 0 && (
+                              <div className="mt-4 p-4 bg-gradient-to-br from-soft-blue-50 to-soft-blue-50/30 rounded-lg border border-soft-blue-200 shadow-sm">
+                                <h4 className="text-sm font-semibold mb-3 text-soft-blue-900 flex items-center gap-2">
+                                  <span className="text-base">❓</span>
+                                  Top Perguntas ({video.commentAnalysis.topQuestions.length})
+                                </h4>
+                                <div className="space-y-2">
+                                  {video.commentAnalysis.topQuestions.slice(0, 3).map((comment, idx) => (
+                                    <div key={idx} className="text-xs bg-white p-3 rounded border border-soft-blue-100 hover:shadow-sm transition-shadow">
+                                      <span className="font-semibold text-gray-900">{comment.author}:</span>
+                                      <span className="ml-1 text-gray-700">{comment.text.substring(0, 150)}{comment.text.length > 150 ? '...' : ''}</span>
+                                      {comment.questionType && (
+                                        <span className="ml-2 px-2 py-0.5 bg-soft-blue-100 text-soft-blue-800 rounded text-[10px] font-medium">
+                                          {comment.questionType}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Todos os Comentários */}
+                      <Card className="bg-muted/50">
+                        <CardHeader>
+                            <CardTitle className="text-base">Comentários Relevantes ({video.commentsData.length})</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {loadingCommentVideoId === video.id && video.commentsData.length === 0 ? (
+                              <div className="flex items-center justify-center p-4">
+                                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                              </div>
+                          ) : (
+                            <div className="space-y-4 max-h-96 overflow-y-auto">
+                              {video.commentsData && video.commentsData.length > 0 ? (
+                                video.commentsData.map((comment, index) => (
+                                  <div key={index} className="flex items-start gap-3 text-sm">
+                                    <Avatar className="h-8 w-8 border">
+                                      <img src={comment.authorImageUrl} alt={comment.author} data-ai-hint="user avatar" className="h-full w-full rounded-full object-cover" />
+                                    </Avatar>
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <p className="font-semibold text-gray-900">{comment.author}</p>
+                                        {comment.isQuestion && <span className="px-2 py-0.5 bg-soft-blue-100 text-soft-blue-800 rounded text-[10px] font-medium">pergunta</span>}
+                                        {comment.isMaterialRequest && <span className="px-2 py-0.5 bg-orange-100 text-orange-800 rounded text-[10px] font-medium">pedido</span>}
+                                        {comment.isProblemStatement && <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded text-[10px] font-medium">problema</span>}
+                                      </div>
+                                      <Comment text={comment.text} />
+                                      {comment.likeCount && comment.likeCount > 0 && (
+                                        <p className="text-xs text-muted-foreground mt-1">👍 {comment.likeCount}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                  <p className="text-sm text-center text-muted-foreground">Nenhum comentário para exibir ou comentários desativados.</p>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}

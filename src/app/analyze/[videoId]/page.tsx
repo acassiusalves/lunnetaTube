@@ -8,7 +8,7 @@ import { ArrowLeft, Loader2, Sparkles, Terminal } from 'lucide-react';
 
 import { searchYoutubeVideos } from '@/ai/flows/youtube-search';
 import { fetchTopComments } from '@/ai/flows/fetch-comments';
-import { analyzeComments, AnalyzeCommentsOutput } from '@/ai/flows/analyze-comments';
+import { analyzeComments as analyzeCommentsAI, AnalyzeCommentsOutput } from '@/ai/flows/analyze-comments';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +17,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Video, mapApiToVideo, CommentData } from '@/lib/data';
 import { AnalysisViewer } from '@/components/analysis-viewer';
+import { analyzeComments } from '@/lib/comment-analyzer';
+import { calculateInfoproductScore, type ScoreBreakdown } from '@/lib/infoproduct-score';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
@@ -36,7 +40,9 @@ export default function AnalyzeVideoPage() {
   const [comments, setComments] = useState<CommentData[]>([]);
   const [commentNextPageToken, setCommentNextPageToken] = useState<string | undefined | null>(null);
   const [analysis, setAnalysis] = useState<AnalyzeCommentsOutput | null>(null);
-  
+  const [quantitativeAnalysis, setQuantitativeAnalysis] = useState<any>(null);
+  const [scoreBreakdown, setScoreBreakdown] = useState<ScoreBreakdown | null>(null);
+
   const [isLoadingVideo, setIsLoadingVideo] = useState(true);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false);
@@ -100,7 +106,7 @@ export default function AnalyzeVideoPage() {
     } else {
       setIsLoadingMoreComments(true);
     }
-    
+
     try {
       const result = await fetchTopComments({
         apiKey,
@@ -112,8 +118,34 @@ export default function AnalyzeVideoPage() {
       if (result.error) {
         setError(result.error);
       } else {
-        setComments(prev => initial ? (result.comments || []) : [...prev, ...(result.comments || [])]);
+        const newComments = initial ? (result.comments || []) : [...comments, ...(result.comments || [])];
+        setComments(newComments);
         setCommentNextPageToken(result.nextPageToken);
+
+        // Calcular análise quantitativa
+        if (newComments.length > 0) {
+          const quantAnalysis = analyzeComments(newComments);
+          setQuantitativeAnalysis(quantAnalysis);
+
+          // Calcular score se tivermos o vídeo
+          if (video) {
+            const videoWithComments = {
+              ...video,
+              commentsData: newComments,
+              commentAnalysis: quantAnalysis
+            };
+            const score = calculateInfoproductScore(videoWithComments);
+            setScoreBreakdown(score);
+
+            // Notificar quando não for o carregamento inicial
+            if (!initial && comments.length > 0) {
+              toast({
+                title: "Análises Atualizadas",
+                description: `Score recalculado com ${newComments.length} comentários. Novo score: ${score.totalScore}/100`,
+              });
+            }
+          }
+        }
       }
     } catch (e: any) {
         setError(e.message || 'Erro ao buscar comentários.');
@@ -132,7 +164,7 @@ export default function AnalyzeVideoPage() {
     setAnalysis(null);
     try {
         const allCommentsText = comments.map(c => c.text).join('\n\n---\n\n');
-        const result = await analyzeComments({ 
+        const result = await analyzeCommentsAI({
             comments: allCommentsText,
             ...(customPrompt && { prompt: customPrompt }),
             ...(aiModel && { model: aiModel }),
@@ -208,10 +240,144 @@ export default function AnalyzeVideoPage() {
                 </CardContent>
             </Card>
 
+            {/* Score de Infoproduto */}
+            {scoreBreakdown && (
+              <Card className="border-soft-blue/20 shadow-lg bg-gradient-to-br from-soft-blue-50/30 to-white">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg text-soft-blue-900">Score de Infoproduto</CardTitle>
+                      <CardDescription className="text-sm">Oportunidade de criação de produto</CardDescription>
+                    </div>
+                    <div className={`text-5xl font-bold ${
+                      scoreBreakdown.totalScore >= 80 ? 'text-yellow-600' :
+                      scoreBreakdown.totalScore >= 65 ? 'text-soft-green-600' :
+                      scoreBreakdown.totalScore >= 50 ? 'text-soft-blue-600' :
+                      'text-gray-500'
+                    }`}>
+                      {scoreBreakdown.totalScore}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-center">
+                    <Badge className={`text-sm px-4 py-1 ${
+                      scoreBreakdown.opportunity === 'ouro' ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white' :
+                      scoreBreakdown.opportunity === 'excelente' ? 'bg-gradient-to-r from-soft-green-400 to-soft-green-500 text-white' :
+                      scoreBreakdown.opportunity === 'boa' ? 'bg-gradient-to-r from-soft-blue-400 to-soft-blue-500 text-white' :
+                      scoreBreakdown.opportunity === 'média' ? 'bg-gray-200 text-gray-700' :
+                      'bg-gray-100 text-gray-500'
+                    }`}>
+                      {scoreBreakdown.opportunity === 'ouro' ? '🏆 OPORTUNIDADE DE OURO' :
+                       scoreBreakdown.opportunity === 'excelente' ? '⭐ Excelente Oportunidade' :
+                       scoreBreakdown.opportunity === 'boa' ? 'Boa Oportunidade' :
+                       scoreBreakdown.opportunity === 'média' ? 'Oportunidade Média' :
+                       'Oportunidade Baixa'}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-3 pt-4">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-soft-blue-700">Engajamento</span>
+                        <span className="font-semibold">{scoreBreakdown.engagementScore}/30</span>
+                      </div>
+                      <Progress value={(scoreBreakdown.engagementScore / 30) * 100} className="h-2" />
+                      <p className="text-xs text-muted-foreground mt-1">{scoreBreakdown.breakdown.engagement}</p>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-orange-700">Análise de Comentários</span>
+                        <span className="font-semibold">{scoreBreakdown.commentAnalysisScore}/25</span>
+                      </div>
+                      <Progress value={(scoreBreakdown.commentAnalysisScore / 25) * 100} className="h-2" />
+                      <p className="text-xs text-muted-foreground mt-1">{scoreBreakdown.breakdown.commentAnalysis}</p>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-soft-green-700">Crescimento</span>
+                        <span className="font-semibold">{scoreBreakdown.growthScore}/10</span>
+                      </div>
+                      <Progress value={(scoreBreakdown.growthScore / 10) * 100} className="h-2" />
+                      <p className="text-xs text-muted-foreground mt-1">{scoreBreakdown.breakdown.growth}</p>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-purple-700">Canal</span>
+                        <span className="font-semibold">{scoreBreakdown.channelScore}/10</span>
+                      </div>
+                      <Progress value={(scoreBreakdown.channelScore / 10) * 100} className="h-2" />
+                      <p className="text-xs text-muted-foreground mt-1">{scoreBreakdown.breakdown.channel}</p>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-blue-700">Qualidade do Conteúdo</span>
+                        <span className="font-semibold">{scoreBreakdown.contentQualityScore}/25</span>
+                      </div>
+                      <Progress value={(scoreBreakdown.contentQualityScore / 25) * 100} className="h-2" />
+                      <p className="text-xs text-muted-foreground mt-1">{scoreBreakdown.breakdown.contentQuality}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Análise Quantitativa */}
+            {quantitativeAnalysis && (
+              <Card className="border-soft-green/20 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-lg text-soft-green-900">Análise Quantitativa</CardTitle>
+                  <CardDescription className="text-sm">Métricas extraídas de {quantitativeAnalysis.totalComments} comentários</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-center p-3 bg-gradient-to-br from-soft-blue-50 to-white rounded-lg border border-soft-blue-200">
+                      <div className="text-2xl font-bold text-soft-blue-600">{quantitativeAnalysis.questionsCount}</div>
+                      <div className="text-xs text-muted-foreground mt-1">Perguntas</div>
+                      <div className="text-xs font-semibold text-soft-blue-600">{quantitativeAnalysis.questionDensity.toFixed(1)}%</div>
+                    </div>
+
+                    <div className="text-center p-3 bg-gradient-to-br from-orange-50 to-white rounded-lg border border-orange-200">
+                      <div className="text-2xl font-bold text-orange-600">{quantitativeAnalysis.materialRequestsCount}</div>
+                      <div className="text-xs text-muted-foreground mt-1">Pedidos</div>
+                      <div className="text-xs font-semibold text-orange-600">{quantitativeAnalysis.materialRequestDensity.toFixed(1)}%</div>
+                    </div>
+
+                    <div className="text-center p-3 bg-gradient-to-br from-red-50 to-white rounded-lg border border-red-200">
+                      <div className="text-2xl font-bold text-red-600">{quantitativeAnalysis.problemStatementsCount}</div>
+                      <div className="text-xs text-muted-foreground mt-1">Problemas</div>
+                    </div>
+
+                    <div className="text-center p-3 bg-gradient-to-br from-yellow-50 to-white rounded-lg border border-yellow-200">
+                      <div className="text-2xl font-bold text-yellow-600">{quantitativeAnalysis.unansweredQuestionsCount}</div>
+                      <div className="text-xs text-muted-foreground mt-1">Não Respondidas</div>
+                    </div>
+                  </div>
+
+                  {quantitativeAnalysis.topMaterialRequests.length > 0 && (
+                    <div className="mt-4 pt-4 border-t">
+                      <h4 className="text-sm font-semibold mb-2 text-orange-900">Top Pedidos de Material</h4>
+                      <div className="space-y-1">
+                        {quantitativeAnalysis.topMaterialRequests.slice(0, 3).map((req: any, idx: number) => (
+                          <div key={idx} className="text-xs p-2 bg-orange-50 rounded">
+                            <span className="font-medium">{req.materialType}:</span> {req.text.substring(0, 80)}...
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
                 <CardHeader>
-                    <CardTitle>Análise de IA</CardTitle>
-                    <CardDescription>Analise os comentários carregados para extrair insights.</CardDescription>
+                    <CardTitle>Análise Qualitativa com IA</CardTitle>
+                    <CardDescription>Analise os comentários com IA para extrair insights qualitativos e ideias de produtos</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Button onClick={handleAnalyzeComments} disabled={isAnalyzing || comments.length === 0} className="w-full">
@@ -236,12 +402,57 @@ export default function AnalyzeVideoPage() {
         </div>
 
         {/* Coluna Direita: Comentários */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
+            {/* Indicador de Progresso de Comentários */}
+            {comments.length > 0 && (
+              <Card className="border-soft-blue/20 bg-gradient-to-r from-soft-blue-50/30 to-white">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <div className="text-2xl font-bold text-soft-blue-600">{comments.length}</div>
+                      <div className="text-xs text-muted-foreground">comentários carregados de {formatNumber(video.comments)} totais</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold text-soft-blue-700">
+                        {((comments.length / video.comments) * 100).toFixed(1)}%
+                      </div>
+                      <div className="text-xs text-muted-foreground">do total</div>
+                    </div>
+                  </div>
+                  <Progress value={(comments.length / video.comments) * 100} className="h-2" />
+                  {commentNextPageToken && (
+                    <div className="mt-3 text-center">
+                      <Button
+                        onClick={() => loadComments(false)}
+                        disabled={isLoadingMoreComments}
+                        size="sm"
+                        className="bg-gradient-to-r from-soft-blue-500 to-soft-blue-600 text-white hover:from-soft-blue-600 hover:to-soft-blue-700"
+                      >
+                        {isLoadingMoreComments ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Carregando mais 100 comentários...
+                          </>
+                        ) : (
+                          <>
+                            Carregar Mais 100 Comentários
+                          </>
+                        )}
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        ℹ️ O score e análises serão atualizados automaticamente
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
                 <CardHeader>
-                    <CardTitle>Comentários</CardTitle>
+                    <CardTitle>Lista de Comentários</CardTitle>
                     <CardDescription>
-                        Explore os comentários mais relevantes do vídeo. Carregados: {comments.length} de {formatNumber(video.comments)}.
+                        Comentários mais relevantes ordenados por engajamento
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -250,27 +461,23 @@ export default function AnalyzeVideoPage() {
                             {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
                         </div>
                     ) : comments.length === 0 ? (
-                        <p className="text-center text-muted-foreground">Nenhum comentário encontrado.</p>
+                        <p className="text-center text-muted-foreground py-8">Nenhum comentário encontrado.</p>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                             {comments.map((comment, index) => (
-                                <div key={index} className="flex items-start gap-3 text-sm">
+                                <div key={index} className="flex items-start gap-3 text-sm p-3 rounded-lg hover:bg-muted/50 transition-colors">
                                     <img src={comment.authorImageUrl} alt={comment.author} className="h-8 w-8 rounded-full border" />
-                                    <div className="flex-1">
-                                        <p className="font-semibold">{comment.author}</p>
-                                        <p className="text-muted-foreground whitespace-pre-wrap">{comment.text}</p>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <p className="font-semibold text-sm">{comment.author}</p>
+                                          {comment.likeCount && comment.likeCount > 0 && (
+                                            <span className="text-xs text-muted-foreground">👍 {comment.likeCount}</span>
+                                          )}
+                                        </div>
+                                        <p className="text-muted-foreground whitespace-pre-wrap break-words">{comment.text}</p>
                                     </div>
                                 </div>
                             ))}
-                        </div>
-                    )}
-                    
-                    {commentNextPageToken && (
-                        <div className="mt-6 flex justify-center">
-                            <Button onClick={() => loadComments(false)} disabled={isLoadingMoreComments} variant="outline">
-                                {isLoadingMoreComments && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Carregar Mais
-                            </Button>
                         </div>
                     )}
                 </CardContent>

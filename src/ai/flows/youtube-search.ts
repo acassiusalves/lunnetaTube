@@ -14,6 +14,7 @@ import { z } from 'genkit';
 import { youtube } from 'googleapis/build/src/apis/youtube';
 import { analyzeVideoPotential } from './analyze-video-potential';
 import { translateKeyword } from './translate-keyword';
+import { fetchChannelStats } from './fetch-channel-stats';
 import { countries } from '@/lib/data';
 
 
@@ -21,12 +22,16 @@ const YoutubeSearchInputSchema = z.object({
   apiKey: z.string().describe("The YouTube Data API v3 key."),
   type: z.enum(['keyword', 'trending']).describe("The type of search to perform."),
   keyword: z.string().optional().describe("The keyword to search for."),
-  country: z.string().optional().describe("The country code for the search."),
+  country: z.string().optional().describe("The country code for the search (will be uppercased)."),
+  relevanceLanguage: z.enum(['pt', 'es', 'en']).optional().describe("Language for content relevance (pt/es/en)."),
   minViews: z.number().optional().describe("The minimum number of views."),
   excludeShorts: z.boolean().optional().describe("Whether to exclude YouTube Shorts."),
   category: z.string().optional().describe("The video category ID."),
   pageToken: z.string().optional().describe("The token for the next page of results."),
-  skipAiAnalysis: z.boolean().optional().describe("Whether to skip the AI potential analysis.")
+  skipAiAnalysis: z.boolean().optional().describe("Whether to skip the AI potential analysis."),
+  publishedAfter: z.string().optional().describe("ISO 8601 format - filter videos published after this date."),
+  publishedBefore: z.string().optional().describe("ISO 8601 format - filter videos published before this date."),
+  order: z.enum(['relevance', 'date', 'rating', 'viewCount', 'title']).optional().describe("Order of results."),
 });
 export type YoutubeSearchInput = z.infer<typeof YoutubeSearchInputSchema>;
 
@@ -58,6 +63,9 @@ const searchYoutubeVideosFlow = ai.defineFlow(
         let nextPageToken: string | undefined | null;
         let videoItems: any[] = [];
 
+        // Garantir regionCode em UPPERCASE
+        const regionCode = input.country ? input.country.toUpperCase() : undefined;
+
         if (input.type === 'keyword') {
             
             let searchTerm = input.keyword || '';
@@ -83,10 +91,14 @@ const searchYoutubeVideosFlow = ai.defineFlow(
                 part: ['snippet'],
                 q: searchTerm,
                 type: 'video',
-                regionCode: input.country,
+                regionCode: regionCode,
+                relevanceLanguage: input.relevanceLanguage,
                 maxResults: 25, // Limiting results to 25 to avoid overly long AI analysis
                 pageToken: input.pageToken,
                 videoDuration: input.excludeShorts ? 'medium' : 'any',
+                publishedAfter: input.publishedAfter,
+                publishedBefore: input.publishedBefore,
+                order: input.order || 'relevance',
             });
 
             videoIds = searchResponse.data.items?.map(item => item.id?.videoId).filter((id): id is string => !!id) || [];
@@ -96,7 +108,8 @@ const searchYoutubeVideosFlow = ai.defineFlow(
             const trendingResponse = await youtubeApi.videos.list({
                 part: ['snippet', 'contentDetails', 'statistics'],
                 chart: 'mostPopular',
-                regionCode: input.country,
+                regionCode: regionCode,
+                hl: input.relevanceLanguage, // Language for metadata
                 videoCategoryId: input.category,
                 maxResults: 25,
                 pageToken: input.pageToken,
@@ -135,6 +148,28 @@ const searchYoutubeVideosFlow = ai.defineFlow(
 
         if (videoItems.length === 0) {
             return { videos: [], nextPageToken: undefined };
+        }
+
+        // Buscar estatísticas dos canais
+        try {
+            const channelIds = videoItems.map(v => v.snippet?.channelId).filter((id): id is string => !!id);
+            const uniqueChannelIds = [...new Set(channelIds)];
+
+            if (uniqueChannelIds.length > 0) {
+                const channelStatsResult = await fetchChannelStats({
+                    channelIds: uniqueChannelIds,
+                    apiKey: input.apiKey,
+                });
+
+                if (channelStatsResult.channelStats && Object.keys(channelStatsResult.channelStats).length > 0) {
+                    videoItems = videoItems.map(video => ({
+                        ...video,
+                        channelStats: channelStatsResult.channelStats[video.snippet?.channelId || ''],
+                    }));
+                }
+            }
+        } catch (channelError) {
+            console.warn("Failed to fetch channel stats, continuing without them.", channelError);
         }
 
         // AI-powered analysis for keyword search

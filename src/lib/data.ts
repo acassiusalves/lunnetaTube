@@ -51,6 +51,7 @@ export interface Video {
   id: string;
   title: string;
   snippet: any;
+  thumbnail: string;
   views: number;
   likes: number;
   comments: number;
@@ -181,6 +182,7 @@ export const mapApiToVideo = (apiVideo: any): Video => {
     id: apiVideo.id.videoId || apiVideo.id,
     title: apiVideo.snippet.title,
     snippet: apiVideo.snippet,
+    thumbnail: apiVideo.snippet?.thumbnails?.high?.url || apiVideo.snippet?.thumbnails?.medium?.url || apiVideo.snippet?.thumbnails?.default?.url || '',
     views: parseInt(apiVideo.statistics?.viewCount || '0', 10),
     likes: parseInt(apiVideo.statistics?.likeCount || '0', 10),
     comments: parseInt(apiVideo.statistics?.commentCount || '0', 10),

@@ -17,12 +17,39 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['Space Grotesk', 'Inter', 'sans-serif'],
-        headline: ['Space Grotesk', 'Inter', 'sans-serif'],
+        body: ['Roboto', 'Arial', 'sans-serif'],
+        headline: ['Roboto', 'Arial', 'sans-serif'],
+        sans: ['Roboto', 'Arial', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
-        // Custom colors from design
+        // Creative Warm Orange colors
+        'brand-orange': {
+          DEFAULT: '#FF6B00',
+          50: '#FFE9D6',
+          100: '#FFD9B8',
+          200: '#FFB87D',
+          300: '#FF9742',
+          400: '#FF8121',
+          500: '#FF6B00',
+          600: '#E65A00',
+          700: '#B84700',
+          800: '#8A3500',
+          900: '#5C2300',
+        },
+        'warm-gray': {
+          50: '#f8f8f8',
+          100: '#f2f2f2',
+          200: '#f0f0f0',
+          300: '#e0e0e0',
+          400: '#909090',
+          500: '#606060',
+          600: '#404040',
+          700: '#282828',
+          800: '#181818',
+          900: '#0f0f0f',
+        },
+        // Keep existing custom colors for compatibility
         'soft-blue': {
           DEFAULT: '#4A90E2',
           50: '#E8F2FC',

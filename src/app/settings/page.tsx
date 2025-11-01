@@ -23,6 +23,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const API_KEY_STORAGE_ITEM = "youtube_api_key";
+const GEMINI_API_KEY_STORAGE_ITEM = "gemini_api_key";
 const COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM = "comment_analysis_prompt";
 const AI_MODEL_STORAGE_ITEM = "ai_model";
 const FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM = "facebook_access_token";
@@ -50,10 +51,12 @@ export default function SettingsPage() {
   const { userProfile, loading: authLoading } = useAuth();
 
   const [apiKey, setApiKey] = useState("");
+  const [geminiApiKey, setGeminiApiKey] = useState("");
   const [commentAnalysisPrompt, setCommentAnalysisPrompt] = useState("");
   const [aiModel, setAiModel] = useState("googleai/gemini-2.5-pro");
   const [facebookAccessToken, setFacebookAccessToken] = useState("");
   const [isYouTubeConnected, setIsYouTubeConnected] = useState(false);
+  const [isGeminiConnected, setIsGeminiConnected] = useState(false);
   const [isFacebookConnected, setIsFacebookConnected] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -64,6 +67,12 @@ export default function SettingsPage() {
     if (savedApiKey) {
       setApiKey(savedApiKey);
       setIsYouTubeConnected(true);
+    }
+    // Gemini
+    const savedGeminiApiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE_ITEM);
+    if (savedGeminiApiKey) {
+      setGeminiApiKey(savedGeminiApiKey);
+      setIsGeminiConnected(true);
     }
     // Comment Prompt
     const savedPrompt = localStorage.getItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM);
@@ -85,7 +94,7 @@ export default function SettingsPage() {
   }, []);
 
   const handleSaveSettings = () => {
-    // Save API Key
+    // Save YouTube API Key
     if (apiKey) {
       localStorage.setItem(API_KEY_STORAGE_ITEM, apiKey);
       setIsYouTubeConnected(true);
@@ -93,7 +102,16 @@ export default function SettingsPage() {
       localStorage.removeItem(API_KEY_STORAGE_ITEM);
       setIsYouTubeConnected(false);
     }
-    
+
+    // Save Gemini API Key
+    if (geminiApiKey) {
+      localStorage.setItem(GEMINI_API_KEY_STORAGE_ITEM, geminiApiKey);
+      setIsGeminiConnected(true);
+    } else {
+      localStorage.removeItem(GEMINI_API_KEY_STORAGE_ITEM);
+      setIsGeminiConnected(false);
+    }
+
     // Save Comment Analysis Prompt
      if (commentAnalysisPrompt) {
         localStorage.setItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM, commentAnalysisPrompt);
@@ -186,6 +204,52 @@ export default function SettingsPage() {
                 placeholder="Cole sua chave de API aqui"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Bot />
+                API do Google Gemini
+              </CardTitle>
+              {isGeminiConnected ? (
+                <Badge variant="secondary" className="border-green-500 text-green-700">
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Conectado
+                </Badge>
+              ) : (
+                <Badge variant="destructive">
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Desconectado
+                </Badge>
+              )}
+            </div>
+            <CardDescription>
+              Insira sua chave de API do Google Gemini para usar os recursos de IA e análise de conteúdo. Você pode obter uma chave no{" "}
+              <Link
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-primary hover:underline"
+              >
+                Google AI Studio
+              </Link>
+              . <strong>IMPORTANTE:</strong> Você também precisa adicionar a chave no arquivo <code className="bg-muted px-1 py-0.5 rounded">.env.local</code> como <code className="bg-muted px-1 py-0.5 rounded">GEMINI_API_KEY=sua_chave</code> e reiniciar o servidor.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="gemini-api-key">Chave de API do Gemini</Label>
+              <Input
+                id="gemini-api-key"
+                type="password"
+                placeholder="Cole sua chave de API do Gemini aqui"
+                value={geminiApiKey}
+                onChange={(e) => setGeminiApiKey(e.target.value)}
               />
             </div>
           </CardContent>

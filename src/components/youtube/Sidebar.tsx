@@ -28,12 +28,7 @@ export function Sidebar({ isCollapsed }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside
-      className={`sticky left-0 top-14 h-[calc(100vh-3.5rem)] bg-white border-r border-[#f0f0f0] transition-all duration-300 ease-in-out overflow-y-auto ${
-        isCollapsed ? 'w-[72px]' : 'w-60'
-      }`}
-    >
-      <nav className="py-3">
+    <nav className="py-3">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href);
 
@@ -76,20 +71,5 @@ export function Sidebar({ isCollapsed }: SidebarProps) {
           );
         })}
       </nav>
-
-      <div className="border-t border-[#f0f0f0] my-3" />
-
-      {/* Additional Info Section */}
-      {!isCollapsed && (
-        <div className="px-4 py-2">
-          <p className="text-xs text-gray-600 mb-2">
-            Analisador de Mercado YouTube
-          </p>
-          <p className="text-xs text-gray-500">
-            Descubra oportunidades de infoprodutos através da análise de vídeos e tendências.
-          </p>
-        </div>
-      )}
-    </aside>
   );
 }

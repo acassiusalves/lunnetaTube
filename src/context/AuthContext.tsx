@@ -36,17 +36,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       if (user) {
         setUser(user);
+
+        // Criar cookie de sessão
+        try {
+          const token = await user.getIdToken();
+          await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token }),
+          });
+        } catch (error) {
+          console.error('Erro ao criar cookie de sessão:', error);
+        }
+
+        // Buscar perfil do usuário
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           setUserProfile(userDoc.data() as UserProfile);
         } else {
-          // Handle case where user exists in Auth but not in Firestore
           setUserProfile(null);
         }
       } else {
         setUser(null);
         setUserProfile(null);
+
+        // Remover cookie de sessão
+        try {
+          await fetch('/api/auth/session', { method: 'DELETE' });
+        } catch (error) {
+          console.error('Erro ao remover cookie de sessão:', error);
+        }
       }
       setLoading(false);
     });

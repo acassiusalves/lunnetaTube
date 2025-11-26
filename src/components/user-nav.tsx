@@ -20,7 +20,7 @@ import {
 import { LogOut, Settings, User, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-export function UserNav() {
+export function UserNav({ isCollapsed = false }: { isCollapsed?: boolean }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -50,14 +50,20 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-9 w-9">
+        <Button variant="ghost" className={`relative rounded-full ${isCollapsed ? 'h-10 w-10' : 'h-auto w-full justify-start gap-3 px-3 py-2'}`}>
+          <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarImage src={user.photoURL || "https://placehold.co/40x40.png"} alt="@user" data-ai-hint="user avatar" />
             <AvatarFallback>{user.email?.[0]?.toUpperCase()}</AvatarFallback>
           </Avatar>
+          {!isCollapsed && (
+            <div className="flex flex-col items-start overflow-hidden">
+              <p className="text-sm font-medium leading-none truncate w-full">{user.displayName || 'Usuário'}</p>
+              <p className="text-xs text-muted-foreground truncate w-full">{user.email}</p>
+            </div>
+          )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+      <DropdownMenuContent className="w-56" align={isCollapsed ? "end" : "start"} side={isCollapsed ? "right" : "top"}>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">Usuário</p>

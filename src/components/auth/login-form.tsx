@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/firebase/config";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { Loader2 } from "lucide-react";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,8 +25,11 @@ export function LoginForm() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      toast({ title: "Sucesso!", description: "Login realizado com sucesso." });
-      router.push("/");
+      toast({ title: "Sucesso!", description: "Bem-vindo ao painel!" });
+
+      // Verificar se há um redirect na URL, senão vai para o painel
+      const redirectTo = searchParams.get('redirect') || '/buscador-youtube';
+      router.push(redirectTo);
     } catch (error: any) {
       toast({
         title: "Erro de Login",

@@ -89,6 +89,42 @@ O sistema usa um tema laranja criativo e quente:
 
 ---
 
+## 🔒 Configuração do Firestore (Armazenamento de Credenciais)
+
+Para que as credenciais sejam salvas permanentemente no Firestore, você precisa configurar as regras de segurança:
+
+**Como configurar:**
+1. Acesse [Firebase Console](https://console.firebase.google.com/)
+2. Selecione seu projeto: **market-miner-buqzl**
+3. Vá em **Firestore Database** > **Regras**
+4. Cole as seguintes regras:
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Permitir que usuários autenticados leiam e escrevam apenas seus próprios dados
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Subcoleções do usuário (como settings/credentials)
+      match /{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}
+```
+
+5. Clique em **Publicar**
+
+Essas regras garantem que:
+- Apenas usuários autenticados podem acessar seus dados
+- Cada usuário só pode ler/escrever seus próprios dados
+- As credenciais ficam criptografadas e seguras
+
+---
+
 ## 🐛 Solução de Problemas
 
 ### Erro: "Please pass in the API key or set the GEMINI_API_KEY"
@@ -102,6 +138,12 @@ O sistema usa um tema laranja criativo e quente:
 1. Acesse http://localhost:4000/settings
 2. Cole sua chave do YouTube
 3. Clique em "Salvar Tudo"
+
+### Erro: "Missing or insufficient permissions" (Firestore)
+**Solução:**
+1. Verifique se você configurou as regras do Firestore (veja seção acima)
+2. Certifique-se de que está logado no sistema
+3. Se o problema persistir, verifique se as regras foram publicadas corretamente no Firebase Console
 
 ---
 

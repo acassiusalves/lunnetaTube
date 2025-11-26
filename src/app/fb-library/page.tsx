@@ -108,7 +108,16 @@ export default function FBLibraryPage() {
       } else {
         setAds(result.ads || []);
         if(!result.ads || result.ads.length === 0){
-            toast({title: "Nenhum resultado", description: "Nenhum anúncio encontrado para esta palavra-chave. Lembre-se que no Brasil, a busca é focada em anúncios de temas sociais ou políticos."})
+            toast({
+              title: "Nenhum resultado",
+              description: "Nenhum anúncio político/social encontrado para esta palavra-chave. Tente termos relacionados a temas sociais, políticos, saúde ou educação.",
+              variant: "default"
+            })
+        } else {
+            toast({
+              title: "Busca concluída!",
+              description: `${result.ads.length} anúncios encontrados.`
+            })
         }
       }
     } catch (e: any) {
@@ -128,18 +137,27 @@ export default function FBLibraryPage() {
           </p>
         </header>
 
+        <Alert>
+          <Terminal className="h-4 w-4" />
+          <AlertTitle>Limitação da API do Facebook</AlertTitle>
+          <AlertDescription>
+            A API do Facebook Ad Library só permite buscar anúncios <strong>políticos e de questões sociais</strong> por palavra-chave.
+            Para buscar anúncios comerciais, use a <Link href="https://www.facebook.com/ads/library" target="_blank" className="underline font-semibold">interface web</Link> e procure diretamente pela página do anunciante.
+          </AlertDescription>
+        </Alert>
+
         <Card>
           <CardHeader>
             <CardTitle>Pesquisar Anúncios</CardTitle>
             <CardDescription>
-              Digite uma palavra-chave para encontrar anúncios relevantes na biblioteca do Facebook.
+              Digite uma palavra-chave para encontrar anúncios políticos e de questões sociais. Para anúncios comerciais, visite a biblioteca web do Facebook.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="flex gap-4">
               <Input
                 id="keyword"
-                placeholder="ex: 'educação financeira'"
+                placeholder="ex: 'educação', 'saúde', 'política'"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 className="flex-grow"

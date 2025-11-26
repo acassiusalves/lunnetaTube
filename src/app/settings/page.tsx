@@ -48,7 +48,7 @@ const SettingsSkeleton = () => (
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const { userProfile, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
 
   const [apiKey, setApiKey] = useState("");
   const [geminiApiKey, setGeminiApiKey] = useState("");
@@ -59,42 +59,104 @@ export default function SettingsPage() {
   const [isGeminiConnected, setIsGeminiConnected] = useState(false);
   const [isFacebookConnected, setIsFacebookConnected] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isLoadingCredentials, setIsLoadingCredentials] = useState(true);
 
+  // Load credentials (localStorage + Firestore fallback)
   useEffect(() => {
     setIsMounted(true);
-    // YouTube
-    const savedApiKey = localStorage.getItem(API_KEY_STORAGE_ITEM);
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-      setIsYouTubeConnected(true);
-    }
-    // Gemini
-    const savedGeminiApiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE_ITEM);
-    if (savedGeminiApiKey) {
-      setGeminiApiKey(savedGeminiApiKey);
-      setIsGeminiConnected(true);
-    }
-    // Comment Prompt
-    const savedPrompt = localStorage.getItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM);
-    if (savedPrompt) {
-      setCommentAnalysisPrompt(savedPrompt);
-    }
-    // AI Model
-    const savedModel = localStorage.getItem(AI_MODEL_STORAGE_ITEM);
-    if (savedModel) {
-      setAiModel(savedModel);
-    }
-    // Facebook
-    const savedFacebookAccessToken = localStorage.getItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM);
-    if (savedFacebookAccessToken) {
-      setFacebookAccessToken(savedFacebookAccessToken);
-      setIsFacebookConnected(true);
+
+    const loadCredentials = async () => {
+      if (!user?.uid) {
+        setIsLoadingCredentials(false);
+        return;
+      }
+
+      try {
+        // Always try to load from localStorage first (instant)
+        const savedApiKey = localStorage.getItem(API_KEY_STORAGE_ITEM);
+        const savedGeminiApiKey = localStorage.getItem(GEMINI_API_KEY_STORAGE_ITEM);
+        const savedFacebookAccessToken = localStorage.getItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM);
+        const savedModel = localStorage.getItem(AI_MODEL_STORAGE_ITEM);
+        const savedPrompt = localStorage.getItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM);
+
+        if (savedApiKey) {
+          setApiKey(savedApiKey);
+          setIsYouTubeConnected(true);
+        }
+        if (savedGeminiApiKey) {
+          setGeminiApiKey(savedGeminiApiKey);
+          setIsGeminiConnected(true);
+        }
+        if (savedFacebookAccessToken) {
+          setFacebookAccessToken(savedFacebookAccessToken);
+          setIsFacebookConnected(true);
+        }
+        if (savedModel) {
+          setAiModel(savedModel);
+        }
+        if (savedPrompt) {
+          setCommentAnalysisPrompt(savedPrompt);
+        }
+
+        // Try to load from Firestore as backup (if rules are configured)
+        try {
+          const response = await fetch(`/api/user/credentials?userId=${user.uid}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.credentials) {
+              const { youtubeApiKey, geminiApiKey, facebookAccessToken, aiModel, commentAnalysisPrompt } = data.credentials;
+
+              // Only override if Firestore has data and localStorage doesn't
+              if (youtubeApiKey && !savedApiKey) {
+                setApiKey(youtubeApiKey);
+                setIsYouTubeConnected(true);
+                localStorage.setItem(API_KEY_STORAGE_ITEM, youtubeApiKey);
+              }
+              if (geminiApiKey && !savedGeminiApiKey) {
+                setGeminiApiKey(geminiApiKey);
+                setIsGeminiConnected(true);
+                localStorage.setItem(GEMINI_API_KEY_STORAGE_ITEM, geminiApiKey);
+              }
+              if (facebookAccessToken && !savedFacebookAccessToken) {
+                setFacebookAccessToken(facebookAccessToken);
+                setIsFacebookConnected(true);
+                localStorage.setItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM, facebookAccessToken);
+              }
+              if (aiModel && !savedModel) {
+                setAiModel(aiModel);
+                localStorage.setItem(AI_MODEL_STORAGE_ITEM, aiModel);
+              }
+              if (commentAnalysisPrompt && !savedPrompt) {
+                setCommentAnalysisPrompt(commentAnalysisPrompt);
+                localStorage.setItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM, commentAnalysisPrompt);
+              }
+            }
+          }
+        } catch (firestoreError) {
+          // Firestore not configured yet, that's ok - we're using localStorage
+          console.log('Firestore backup not available (rules may not be configured)');
+        }
+      } catch (error) {
+        console.error('Error loading credentials:', error);
+      } finally {
+        setIsLoadingCredentials(false);
+      }
+    };
+
+    loadCredentials();
+  }, [user]);
+
+  const handleSaveSettings = async () => {
+    if (!user?.uid) {
+      toast({
+        title: "Erro",
+        description: "Usuário não autenticado.",
+        variant: "destructive",
+      });
+      return;
     }
 
-  }, []);
-
-  const handleSaveSettings = () => {
-    // Save YouTube API Key
+    // Save to localStorage (always works)
     if (apiKey) {
       localStorage.setItem(API_KEY_STORAGE_ITEM, apiKey);
       setIsYouTubeConnected(true);
@@ -103,7 +165,6 @@ export default function SettingsPage() {
       setIsYouTubeConnected(false);
     }
 
-    // Save Gemini API Key
     if (geminiApiKey) {
       localStorage.setItem(GEMINI_API_KEY_STORAGE_ITEM, geminiApiKey);
       setIsGeminiConnected(true);
@@ -112,29 +173,48 @@ export default function SettingsPage() {
       setIsGeminiConnected(false);
     }
 
-    // Save Comment Analysis Prompt
-     if (commentAnalysisPrompt) {
-        localStorage.setItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM, commentAnalysisPrompt);
+    if (facebookAccessToken) {
+      localStorage.setItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM, facebookAccessToken);
+      setIsFacebookConnected(true);
     } else {
-        localStorage.removeItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM);
+      localStorage.removeItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM);
+      setIsFacebookConnected(false);
     }
 
-    // Save AI Model
+    if (commentAnalysisPrompt) {
+      localStorage.setItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM, commentAnalysisPrompt);
+    } else {
+      localStorage.removeItem(COMMENT_ANALYSIS_PROMPT_STORAGE_ITEM);
+    }
+
     localStorage.setItem(AI_MODEL_STORAGE_ITEM, aiModel);
 
-    // Save Facebook Credentials
-    if (facebookAccessToken) {
-        localStorage.setItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM, facebookAccessToken);
-        setIsFacebookConnected(true);
-    } else {
-        localStorage.removeItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM);
-        setIsFacebookConnected(false);
+    // Try to sync to Firestore in background (optional)
+    try {
+      const response = await fetch('/api/user/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          youtubeApiKey: apiKey,
+          geminiApiKey: geminiApiKey,
+          facebookAccessToken: facebookAccessToken,
+          aiModel: aiModel,
+          commentAnalysisPrompt: commentAnalysisPrompt,
+        }),
+      });
+
+      if (response.ok) {
+        console.log('Credentials synced to Firestore successfully');
+      }
+    } catch (error) {
+      // Firestore sync failed, but that's ok - localStorage is the primary storage
+      console.log('Firestore sync skipped (rules may not be configured yet)');
     }
 
-
     toast({
-        title: "Configurações Salvas",
-        description: "Suas configurações foram atualizadas com sucesso.",
+      title: "Configurações Salvas",
+      description: "Suas configurações foram atualizadas com sucesso.",
     });
   }
 
@@ -143,7 +223,7 @@ export default function SettingsPage() {
     handleSaveSettings();
   };
 
-  if (authLoading || !isMounted) {
+  if (authLoading || !isMounted || isLoadingCredentials) {
     return <SettingsSkeleton />;
   }
 

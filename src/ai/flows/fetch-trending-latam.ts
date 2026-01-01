@@ -15,6 +15,8 @@ export interface FetchTrendingLatamInput {
   apiKey: string;
   countries: Array<{ code: string; lang: 'pt' | 'es' }>;
   excludeShorts?: boolean;
+  excludeMusic?: boolean;
+  excludeGaming?: boolean;
   category?: string;
   maxResultsPerCountry?: number;
 }
@@ -56,6 +58,8 @@ export async function fetchTrendingLatam(
         country: country.code.toUpperCase(),
         relevanceLanguage: country.lang,
         excludeShorts: params.excludeShorts ?? true,
+        excludeMusic: params.excludeMusic ?? true,
+        excludeGaming: params.excludeGaming ?? true,
         category: params.category === 'all' ? undefined : params.category,
         apiKey: params.apiKey,
       });

@@ -52,19 +52,21 @@ interface VideoTableProps {
   loadingCommentVideoId?: string | null;
   sortConfig: SortConfig;
   onSort: (key: keyof Video) => void;
+  isTranslationEnabled?: boolean;
+  translations?: Record<string, string>;
 }
 
-const Comment = ({ text }: { text: string }) => {
+const Comment = ({ text, originalText, showOriginal }: { text: string; originalText?: string; showOriginal?: boolean }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const maxLength = 400;
     const isLongComment = text.length > maxLength;
-  
+
     const toggleExpanded = () => setIsExpanded(!isExpanded);
-  
+
     const displayedText = isLongComment && !isExpanded
       ? `${text.substring(0, maxLength)}...`
       : text;
-  
+
     return (
       <div className="text-muted-foreground whitespace-pre-wrap break-words max-w-full">
         <p>{displayedText}</p>
@@ -75,6 +77,11 @@ const Comment = ({ text }: { text: string }) => {
           >
             {isExpanded ? "Ver menos" : "Ver mais"}
           </button>
+        )}
+        {showOriginal && originalText && originalText !== text && (
+          <p className="text-[10px] italic text-muted-foreground/70 mt-1">
+            Original: {originalText.length > 100 ? originalText.substring(0, 100) + '...' : originalText}
+          </p>
         )}
       </div>
     );
@@ -110,8 +117,29 @@ export function VideoTable({
   loadingCommentVideoId,
   sortConfig,
   onSort,
+  isTranslationEnabled = false,
+  translations = {},
 }: VideoTableProps) {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  // Helper para obter título traduzido ou original
+  const getDisplayTitle = (video: Video) => {
+    if (isTranslationEnabled && translations[`title_${video.id}`]) {
+      return translations[`title_${video.id}`];
+    }
+    return video.title;
+  };
+
+  // Helper para obter comentário traduzido ou original
+  const getDisplayComment = (videoId: string, commentIndex: number, originalText: string, type?: 'q' | 'm') => {
+    const key = type
+      ? `comment_${videoId}_${type}_${commentIndex}`
+      : `comment_${videoId}_${commentIndex}`;
+    if (isTranslationEnabled && translations[key]) {
+      return translations[key];
+    }
+    return originalText;
+  };
 
   const toggleRowExpansion = (videoId: string) => {
     const newExpandedRow = expandedRow === videoId ? null : videoId;
@@ -227,7 +255,14 @@ export function VideoTable({
                     </Link>
                     <div className="space-y-1.5">
                         <div className="flex items-start gap-2">
-                          <TruncatedText text={video.title} maxLength={60} asLink href={video.videoUrl} />
+                          <div className="flex flex-col">
+                            <TruncatedText text={getDisplayTitle(video)} maxLength={60} asLink href={video.videoUrl} />
+                            {isTranslationEnabled && translations[`title_${video.id}`] && (
+                              <span className="text-[10px] text-muted-foreground italic mt-0.5">
+                                Original: {video.title.length > 40 ? video.title.substring(0, 40) + '...' : video.title}
+                              </span>
+                            )}
+                          </div>
                           {video.infoproductScore && video.infoproductScore >= 80 && (
                             <span className="flex-shrink-0 px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[10px] font-bold rounded-full">
                               🏆 OURO
@@ -445,17 +480,25 @@ export function VideoTable({
                                   Top Pedidos de Material ({video.commentAnalysis.topMaterialRequests.length})
                                 </h4>
                                 <div className="space-y-2">
-                                  {video.commentAnalysis.topMaterialRequests.slice(0, 3).map((comment, idx) => (
-                                    <div key={idx} className="text-xs bg-white p-3 rounded border border-orange-100 hover:shadow-sm transition-shadow">
-                                      <span className="font-semibold text-gray-900">{comment.author}:</span>
-                                      <span className="ml-1 text-gray-700">{comment.text.substring(0, 150)}{comment.text.length > 150 ? '...' : ''}</span>
-                                      {comment.materialType && (
-                                        <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 rounded text-[10px] font-medium">
-                                          {comment.materialType}
-                                        </span>
-                                      )}
-                                    </div>
-                                  ))}
+                                  {video.commentAnalysis.topMaterialRequests.slice(0, 3).map((comment, idx) => {
+                                    const displayText = getDisplayComment(video.id, idx, comment.text, 'm');
+                                    return (
+                                      <div key={idx} className="text-xs bg-white p-3 rounded border border-orange-100 hover:shadow-sm transition-shadow">
+                                        <span className="font-semibold text-gray-900">{comment.author}:</span>
+                                        <span className="ml-1 text-gray-700">{displayText.substring(0, 150)}{displayText.length > 150 ? '...' : ''}</span>
+                                        {comment.materialType && (
+                                          <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 rounded text-[10px] font-medium">
+                                            {comment.materialType}
+                                          </span>
+                                        )}
+                                        {isTranslationEnabled && translations[`comment_${video.id}_m_${idx}`] && (
+                                          <div className="mt-1 text-[10px] text-muted-foreground italic">
+                                            Original: {comment.text.substring(0, 80)}{comment.text.length > 80 ? '...' : ''}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             )}
@@ -468,17 +511,25 @@ export function VideoTable({
                                   Top Perguntas ({video.commentAnalysis.topQuestions.length})
                                 </h4>
                                 <div className="space-y-2">
-                                  {video.commentAnalysis.topQuestions.slice(0, 3).map((comment, idx) => (
-                                    <div key={idx} className="text-xs bg-white p-3 rounded border border-soft-blue-100 hover:shadow-sm transition-shadow">
-                                      <span className="font-semibold text-gray-900">{comment.author}:</span>
-                                      <span className="ml-1 text-gray-700">{comment.text.substring(0, 150)}{comment.text.length > 150 ? '...' : ''}</span>
-                                      {comment.questionType && (
-                                        <span className="ml-2 px-2 py-0.5 bg-soft-blue-100 text-soft-blue-800 rounded text-[10px] font-medium">
-                                          {comment.questionType}
-                                        </span>
-                                      )}
-                                    </div>
-                                  ))}
+                                  {video.commentAnalysis.topQuestions.slice(0, 3).map((comment, idx) => {
+                                    const displayText = getDisplayComment(video.id, idx, comment.text, 'q');
+                                    return (
+                                      <div key={idx} className="text-xs bg-white p-3 rounded border border-soft-blue-100 hover:shadow-sm transition-shadow">
+                                        <span className="font-semibold text-gray-900">{comment.author}:</span>
+                                        <span className="ml-1 text-gray-700">{displayText.substring(0, 150)}{displayText.length > 150 ? '...' : ''}</span>
+                                        {comment.questionType && (
+                                          <span className="ml-2 px-2 py-0.5 bg-soft-blue-100 text-soft-blue-800 rounded text-[10px] font-medium">
+                                            {comment.questionType}
+                                          </span>
+                                        )}
+                                        {isTranslationEnabled && translations[`comment_${video.id}_q_${idx}`] && (
+                                          <div className="mt-1 text-[10px] text-muted-foreground italic">
+                                            Original: {comment.text.substring(0, 80)}{comment.text.length > 80 ? '...' : ''}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             )}
@@ -499,25 +550,32 @@ export function VideoTable({
                           ) : (
                             <div className="space-y-4 max-h-96 overflow-y-auto">
                               {video.commentsData && video.commentsData.length > 0 ? (
-                                video.commentsData.map((comment, index) => (
-                                  <div key={index} className="flex items-start gap-3 text-sm">
-                                    <Avatar className="h-8 w-8 border">
-                                      <img src={comment.authorImageUrl} alt={comment.author} data-ai-hint="user avatar" className="h-full w-full rounded-full object-cover" />
-                                    </Avatar>
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <p className="font-semibold text-gray-900">{comment.author}</p>
-                                        {comment.isQuestion && <span className="px-2 py-0.5 bg-soft-blue-100 text-soft-blue-800 rounded text-[10px] font-medium">pergunta</span>}
-                                        {comment.isMaterialRequest && <span className="px-2 py-0.5 bg-orange-100 text-orange-800 rounded text-[10px] font-medium">pedido</span>}
-                                        {comment.isProblemStatement && <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded text-[10px] font-medium">problema</span>}
+                                video.commentsData.map((comment, index) => {
+                                  const displayText = getDisplayComment(video.id, index, comment.text);
+                                  return (
+                                    <div key={index} className="flex items-start gap-3 text-sm">
+                                      <Avatar className="h-8 w-8 border">
+                                        <img src={comment.authorImageUrl} alt={comment.author} data-ai-hint="user avatar" className="h-full w-full rounded-full object-cover" />
+                                      </Avatar>
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <p className="font-semibold text-gray-900">{comment.author}</p>
+                                          {comment.isQuestion && <span className="px-2 py-0.5 bg-soft-blue-100 text-soft-blue-800 rounded text-[10px] font-medium">pergunta</span>}
+                                          {comment.isMaterialRequest && <span className="px-2 py-0.5 bg-orange-100 text-orange-800 rounded text-[10px] font-medium">pedido</span>}
+                                          {comment.isProblemStatement && <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded text-[10px] font-medium">problema</span>}
+                                        </div>
+                                        <Comment
+                                          text={displayText}
+                                          originalText={comment.text}
+                                          showOriginal={isTranslationEnabled && translations[`comment_${video.id}_${index}`] !== undefined}
+                                        />
+                                        {comment.likeCount && comment.likeCount > 0 && (
+                                          <p className="text-xs text-muted-foreground mt-1">👍 {comment.likeCount}</p>
+                                        )}
                                       </div>
-                                      <Comment text={comment.text} />
-                                      {comment.likeCount && comment.likeCount > 0 && (
-                                        <p className="text-xs text-muted-foreground mt-1">👍 {comment.likeCount}</p>
-                                      )}
                                     </div>
-                                  </div>
-                                ))
+                                  );
+                                })
                               ) : (
                                   <p className="text-sm text-center text-muted-foreground">Nenhum comentário para exibir ou comentários desativados.</p>
                               )}

@@ -9,6 +9,7 @@ import { ArrowLeft, Loader2, Sparkles, Terminal, TrendingUp, Users, Target, Mess
 import { searchYoutubeVideos } from '@/ai/flows/youtube-search';
 import { fetchTopComments } from '@/ai/flows/fetch-comments';
 import { analyzeComments as analyzeCommentsAI, AnalyzeCommentsOutput } from '@/ai/flows/analyze-comments';
+import { generateMvpSpec } from '@/ai/flows/generate-mvp-spec';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Video, mapApiToVideo, CommentData } from '@/lib/data';
-import { AnalysisViewer } from '@/components/analysis-viewer';
+import { SaasOpportunityCard } from '@/components/dashboard/saas-opportunity-card';
 import { analyzeComments } from '@/lib/comment-analyzer';
 import { calculateInfoproductScore, type ScoreBreakdown } from '@/lib/infoproduct-score';
 import { Badge } from '@/components/ui/badge';
@@ -477,9 +478,100 @@ export default function AnalyzeVideoPage() {
                     </div>}
 
                     {analysis && (
-                        <div className="mt-6 space-y-4 text-sm">
-                            <h4 className="font-semibold">Resultado da Análise</h4>
-                            <AnalysisViewer data={analysis} videoId={videoId as string} />
+                        <div className="mt-6 space-y-6">
+                            <h4 className="font-semibold text-lg">Oportunidades de Micro SaaS Detectadas</h4>
+
+                            {/* Summary Stats */}
+                            <div className="grid grid-cols-3 gap-3">
+                                <Card className="bg-gradient-to-br from-red-50 to-orange-50">
+                                    <CardContent className="pt-4 text-center">
+                                        <div className="text-2xl font-bold text-red-600">
+                                            {analysis.painLevel}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">Nível de Dor</div>
+                                    </CardContent>
+                                </Card>
+                                <Card className="bg-gradient-to-br from-yellow-50 to-amber-50">
+                                    <CardContent className="pt-4 text-center">
+                                        <div className="text-2xl font-bold text-yellow-700">
+                                            {analysis.detectedWorkarounds.length}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">Gambiarras</div>
+                                    </CardContent>
+                                </Card>
+                                <Card className="bg-gradient-to-br from-purple-50 to-indigo-50">
+                                    <CardContent className="pt-4 text-center">
+                                        <div className="text-2xl font-bold text-purple-600">
+                                            {analysis.saasOpportunities.length}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">Oportunidades</div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Workarounds */}
+                            {analysis.detectedWorkarounds.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                                        <AlertTriangle className="h-4 w-4 text-orange-600" />
+                                        Gambiarras Detectadas
+                                    </h4>
+                                    <ul className="space-y-1 text-sm text-muted-foreground">
+                                        {analysis.detectedWorkarounds.map((w, i) => (
+                                            <li key={i} className="flex items-start gap-2">
+                                                <span className="text-orange-500">•</span>
+                                                <span>{w}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Tool Complaints */}
+                            {analysis.complaintsAboutTools.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                                        <AlertTriangle className="h-4 w-4 text-red-600" />
+                                        Reclamações sobre Ferramentas
+                                    </h4>
+                                    <ul className="space-y-1 text-sm text-muted-foreground">
+                                        {analysis.complaintsAboutTools.map((c, i) => (
+                                            <li key={i} className="flex items-start gap-2">
+                                                <span className="text-red-500">•</span>
+                                                <span>{c}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* SaaS Opportunities Grid */}
+                            {analysis.saasOpportunities.length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                        <Zap className="h-5 w-5 text-purple-600" />
+                                        Oportunidades de Micro SaaS
+                                    </h4>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {analysis.saasOpportunities.map((opportunity, idx) => (
+                                            <SaasOpportunityCard
+                                                key={idx}
+                                                opportunity={{...opportunity, painLevel: analysis.painLevel}}
+                                                onGenerateSpec={async (opp) => {
+                                                    toast({ title: "Gerando especificação...", description: "Aguarde enquanto criamos a spec técnica." });
+                                                    try {
+                                                        const spec = await generateMvpSpec({ opportunity: opp });
+                                                        console.log('Spec gerada:', spec);
+                                                        toast({ title: "Especificação pronta!", description: "Veja o console para detalhes." });
+                                                    } catch (e: any) {
+                                                        toast({ title: "Erro", description: e.message, variant: "destructive" });
+                                                    }
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </CardContent>

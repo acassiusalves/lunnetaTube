@@ -26,6 +26,8 @@ const YoutubeSearchInputSchema = z.object({
   relevanceLanguage: z.enum(['pt', 'es', 'en']).optional().describe("Language for content relevance (pt/es/en)."),
   minViews: z.number().optional().describe("The minimum number of views."),
   excludeShorts: z.boolean().optional().describe("Whether to exclude YouTube Shorts."),
+  excludeMusic: z.boolean().optional().describe("Whether to exclude Music category (categoryId 10)."),
+  excludeGaming: z.boolean().optional().describe("Whether to exclude Gaming category (categoryId 20)."),
   category: z.string().optional().describe("The video category ID."),
   pageToken: z.string().optional().describe("The token for the next page of results."),
   skipAiAnalysis: z.boolean().optional().describe("Whether to skip the AI potential analysis."),
@@ -115,18 +117,30 @@ const searchYoutubeVideosFlow = ai.defineFlow(
                 pageToken: input.pageToken,
             });
 
-            const videos = input.excludeShorts 
-                ? trendingResponse.data.items?.filter(v => {
+            let videos = trendingResponse.data.items || [];
+
+            // Filter out Shorts (duration <= 60 seconds)
+            if (input.excludeShorts) {
+                videos = videos.filter(v => {
                     const duration = v.contentDetails?.duration;
                     if (!duration) return true;
-                    // Improved check for shorts (duration <= 60 seconds)
                     const match = duration.match(/PT(?:(\d+)M)?(?:(\d+)S)?/);
-                    if (!match) return true; // if duration format is weird, don't filter
+                    if (!match) return true;
                     const minutes = parseInt(match[1] || '0', 10);
                     const seconds = parseInt(match[2] || '0', 10);
                     return (minutes * 60 + seconds) > 60;
-                }) 
-                : trendingResponse.data.items;
+                });
+            }
+
+            // Filter out Music category (categoryId 10)
+            if (input.excludeMusic) {
+                videos = videos.filter(v => v.snippet?.categoryId !== '10');
+            }
+
+            // Filter out Gaming category (categoryId 20)
+            if (input.excludeGaming) {
+                videos = videos.filter(v => v.snippet?.categoryId !== '20');
+            }
 
             videoItems = videos || [];
             nextPageToken = trendingResponse.data.nextPageToken || undefined;

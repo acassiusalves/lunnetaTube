@@ -11,7 +11,9 @@ import { countries } from '@/lib/data';
 import { LATAM_COUNTRIES, getLanguageByCountry } from '@/lib/latam-config';
 import { fetchTrendingLatam } from '@/ai/flows/fetch-trending-latam';
 import { MultiSelectCountries } from '@/components/ui/multi-select-countries';
-import { Loader2, Search, Terminal, Sparkles } from 'lucide-react';
+import { Loader2, Search, Terminal, Sparkles, Languages } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { translateContent } from '@/ai/flows/translate-content';
 import { searchYoutubeVideos } from '@/ai/flows/youtube-search';
 import { fetchVideoCategories } from '@/ai/flows/fetch-video-categories';
 import { fetchTopComments } from '@/ai/flows/fetch-comments';
@@ -97,11 +99,108 @@ export default function TrendingPage() {
   const [selectedCountries, setSelectedCountries] = useState<string[]>(['BR']);
   const [category, setCategory] = useState<string>('all');
   const [excludeShorts, setExcludeShorts] = useState(true);
+  const [excludeMusic, setExcludeMusic] = useState(true);
+  const [excludeGaming, setExcludeGaming] = useState(true);
   const [isMultiCountry, setIsMultiCountry] = useState(false);
 
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'views', direction: 'descending' });
 
+  // Estado de tradução
+  const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+
   const getApiKey = () => typeof window !== 'undefined' ? localStorage.getItem(API_KEY_STORAGE_ITEM) : null;
+
+  // Função para traduzir conteúdo dos vídeos
+  const handleTranslationToggle = async (enabled: boolean) => {
+    setIsTranslationEnabled(enabled);
+
+    if (enabled && videos.length > 0) {
+      setIsTranslating(true);
+
+      try {
+        const textsToTranslate: { id: string; text: string }[] = [];
+
+        // Coletar títulos não traduzidos
+        videos.forEach(v => {
+          if (!translations[`title_${v.id}`]) {
+            textsToTranslate.push({
+              id: `title_${v.id}`,
+              text: v.title,
+            });
+          }
+
+          // Coletar comentários não traduzidos (top perguntas e pedidos de material)
+          if (v.commentAnalysis) {
+            v.commentAnalysis.topQuestions?.forEach((comment, idx) => {
+              const commentId = `comment_${v.id}_q_${idx}`;
+              if (!translations[commentId]) {
+                textsToTranslate.push({
+                  id: commentId,
+                  text: comment.text,
+                });
+              }
+            });
+
+            v.commentAnalysis.topMaterialRequests?.forEach((comment, idx) => {
+              const commentId = `comment_${v.id}_m_${idx}`;
+              if (!translations[commentId]) {
+                textsToTranslate.push({
+                  id: commentId,
+                  text: comment.text,
+                });
+              }
+            });
+          }
+
+          // Coletar todos os comentários do vídeo
+          v.commentsData?.forEach((comment, idx) => {
+            const commentId = `comment_${v.id}_${idx}`;
+            if (!translations[commentId]) {
+              textsToTranslate.push({
+                id: commentId,
+                text: comment.text,
+              });
+            }
+          });
+        });
+
+        if (textsToTranslate.length > 0) {
+          const result = await translateContent({
+            texts: textsToTranslate,
+            targetLanguage: 'Brazilian Portuguese',
+          });
+
+          // Atualizar traduções
+          const newTranslations: Record<string, string> = { ...translations };
+          result.translations.forEach(t => {
+            newTranslations[t.id] = t.translatedText;
+          });
+          setTranslations(newTranslations);
+
+          toast({
+            title: "Tradução concluída",
+            description: `${result.translations.length} textos traduzidos`,
+          });
+        } else {
+          toast({
+            title: "Tradução ativada",
+            description: "Todos os textos já estão traduzidos",
+          });
+        }
+      } catch (e: any) {
+        toast({
+          title: "Erro na tradução",
+          description: e.message,
+          variant: 'destructive',
+        });
+        setIsTranslationEnabled(false);
+      } finally {
+        setIsTranslating(false);
+      }
+    }
+  };
 
   // Função para buscar e analisar comentários de um vídeo
   const handleFetchComments = async (videoId: string) => {
@@ -214,6 +313,8 @@ export default function TrendingPage() {
           apiKey,
           countries,
           excludeShorts,
+          excludeMusic,
+          excludeGaming,
           category: category === 'all' ? undefined : category,
         });
 
@@ -249,6 +350,8 @@ export default function TrendingPage() {
           relevanceLanguage: getLanguageByCountry(selectedCountries[0]),
           category: category === 'all' ? undefined : category,
           excludeShorts,
+          excludeMusic,
+          excludeGaming,
           pageToken: isLoadMore ? nextPageToken : undefined,
           apiKey,
         });
@@ -301,7 +404,7 @@ export default function TrendingPage() {
 
       const analysisResult = await analyzeVideoPotential({
         videos: videosForAnalysis,
-        keyword: `trending ${category !== 'all' ? category : ''} videos in ${country}`
+        keyword: `trending ${category !== 'all' ? category : ''} videos in ${selectedCountries.join(', ')}`
       });
 
       if (analysisResult.highPotentialVideoIds) {
@@ -457,9 +560,19 @@ export default function TrendingPage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="exclude-shorts-trending" checked={excludeShorts} onCheckedChange={(c) => setExcludeShorts(c as boolean)} />
-                  <Label htmlFor="exclude-shorts-trending" className="text-sm font-normal">Excluir Shorts</Label>
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="exclude-shorts-trending" checked={excludeShorts} onCheckedChange={(c) => setExcludeShorts(c as boolean)} />
+                    <Label htmlFor="exclude-shorts-trending" className="text-sm font-normal">Excluir Shorts</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="exclude-music-trending" checked={excludeMusic} onCheckedChange={(c) => setExcludeMusic(c as boolean)} />
+                    <Label htmlFor="exclude-music-trending" className="text-sm font-normal">Excluir Música</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="exclude-gaming-trending" checked={excludeGaming} onCheckedChange={(c) => setExcludeGaming(c as boolean)} />
+                    <Label htmlFor="exclude-gaming-trending" className="text-sm font-normal">Excluir Games</Label>
+                  </div>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <Button type="submit" disabled={isLoading} className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
@@ -506,7 +619,25 @@ export default function TrendingPage() {
           </TooltipProvider>
         )}
         
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+        {videos.length > 0 && (
+          <div className="flex items-center justify-end gap-3 px-4 py-2 bg-muted/30 rounded-t-lg border border-b-0">
+            <div className="flex items-center gap-2">
+              {isTranslating && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+              <Languages className="h-4 w-4 text-muted-foreground" />
+              <Label htmlFor="translation-toggle" className="text-sm font-medium cursor-pointer">
+                Traduzir para Português
+              </Label>
+              <Switch
+                id="translation-toggle"
+                checked={isTranslationEnabled}
+                onCheckedChange={handleTranslationToggle}
+                disabled={isTranslating}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className={`rounded-lg border bg-card text-card-foreground shadow-sm ${videos.length > 0 ? 'rounded-t-none border-t-0' : ''}`}>
             <TooltipProvider>
                 <VideoTable
                     videos={sortedVideos}
@@ -515,6 +646,8 @@ export default function TrendingPage() {
                     loadingCommentVideoId={loadingCommentVideoId}
                     sortConfig={sortConfig}
                     onSort={handleSort}
+                    isTranslationEnabled={isTranslationEnabled}
+                    translations={translations}
                 />
             </TooltipProvider>
         </div>

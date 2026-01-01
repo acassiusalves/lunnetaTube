@@ -20,6 +20,7 @@ import { Video, mapApiToVideo, CommentData } from '@/lib/data';
 import { SaasOpportunityCard } from '@/components/dashboard/saas-opportunity-card';
 import { analyzeComments } from '@/lib/comment-analyzer';
 import { calculateInfoproductScore, type ScoreBreakdown } from '@/lib/infoproduct-score';
+import { calculateSaasPotential } from '@/lib/opportunity-engine';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -222,6 +223,17 @@ export default function AnalyzeVideoPage() {
             };
             const score = calculateInfoproductScore(videoWithComments);
             setScoreBreakdown(score);
+
+            // [NOVO] Cálculo Local de Potencial SaaS
+            const saasSignals = calculateSaasPotential(newComments);
+
+            if (saasSignals.saasScore > 50) {
+              toast({
+                title: "🔥 Oportunidade SaaS Detectada!",
+                description: `Score de Dor Técnica: ${saasSignals.saasScore}/100. Palavras-chave: ${saasSignals.triggerWords.slice(0, 3).join(', ')}`,
+                variant: "default",
+              });
+            }
 
             // Notificar quando não for o carregamento inicial
             if (!initial && comments.length > 0) {

@@ -282,3 +282,71 @@ function getCurrencyCode(countryCode: string): string {
   };
   return currencies[countryCode.toUpperCase()] || 'USD';
 }
+
+// ============================================
+// SAAS OPPORTUNITY DETECTION
+// ============================================
+
+/**
+ * [NOVO] Analisa sinais específicos para Micro SaaS
+ * Retorna um score de 0 a 100 indicando a "DOR TÉCNICA"
+ */
+export interface SaasSignals {
+  hasSpreadsheetRequest: boolean; // Pediram planilha?
+  hasManualComplaint: boolean;    // Reclamaram de trabalho manual?
+  hasToolComplaint: boolean;      // Reclamaram de ferramenta cara?
+  saasScore: number;              // 0 a 100
+  triggerWords: string[];         // Quais palavras ativaram o score
+}
+
+export function calculateSaasPotential(comments: { text: string }[]): SaasSignals {
+  // Juntar todos os textos para análise rápida
+  const fullText = comments.map(c => c.text.toLowerCase()).join(' ');
+  const triggerWords: string[] = [];
+
+  // 1. Detetives de Planilha (Peso: 40)
+  const spreadsheetTerms = ['planilha', 'excel', 'sheets', 'tabela', 'drive', 'csv', 'modelo'];
+  const hasSpreadsheetRequest = spreadsheetTerms.some(term => {
+    if (fullText.includes(term)) {
+      triggerWords.push(term);
+      return true;
+    }
+    return false;
+  });
+
+  // 2. Detetives de Trabalho Manual/Dor (Peso: 30)
+  const manualTerms = ['manual', 'na mão', 'copiar e colar', 'demora muito', 'perco tempo', 'cansativo', 'chato'];
+  const hasManualComplaint = manualTerms.some(term => {
+    if (fullText.includes(term)) {
+      triggerWords.push(term);
+      return true;
+    }
+    return false;
+  });
+
+  // 3. Detetives de Ferramentas (Peso: 30)
+  const toolTerms = ['trello', 'notion', 'salesforce', 'caro', 'mensalidade', 'assinatura', 'complexo', 'difícil de usar', 'travando'];
+  const hasToolComplaint = toolTerms.some(term => {
+    if (fullText.includes(term)) {
+      triggerWords.push(term);
+      return true;
+    }
+    return false;
+  });
+
+  let score = 0;
+  if (hasSpreadsheetRequest) score += 40;
+  if (hasManualComplaint) score += 30;
+  if (hasToolComplaint) score += 30;
+
+  // Bónus: Se tiver muita gente pedindo (densidade)
+  if (comments.length > 50 && triggerWords.length > 5) score = Math.min(100, score + 10);
+
+  return {
+    hasSpreadsheetRequest,
+    hasManualComplaint,
+    hasToolComplaint,
+    saasScore: score,
+    triggerWords: [...new Set(triggerWords)] // Remove duplicados
+  };
+}

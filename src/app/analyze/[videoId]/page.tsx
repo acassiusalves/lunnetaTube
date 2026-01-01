@@ -227,11 +227,12 @@ export default function AnalyzeVideoPage() {
             // [NOVO] Cálculo Local de Potencial SaaS
             const saasSignals = calculateSaasPotential(newComments);
 
-            if (saasSignals.saasScore > 50) {
+            if (saasSignals.saasScore > 50 && initial) {
               toast({
                 title: "🔥 Oportunidade SaaS Detectada!",
                 description: `Score de Dor Técnica: ${saasSignals.saasScore}/100. Palavras-chave: ${saasSignals.triggerWords.slice(0, 3).join(', ')}`,
                 variant: "default",
+                duration: 6000,
               });
             }
 

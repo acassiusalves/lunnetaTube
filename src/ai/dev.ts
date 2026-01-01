@@ -15,5 +15,5 @@ import '@/ai/flows/facebook-ads-search.ts';
 import '@/ai/flows/translate-keyword.ts';
 import '@/ai/flows/fetch-video-categories.ts';
 import '@/ai/flows/generate-mvp-spec.ts';
+import '@/ai/flows/fetch-google-trends.ts';
 
-    

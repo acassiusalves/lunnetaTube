@@ -46,6 +46,7 @@
     "firebase-admin": "^12.2.0",
     "genkit": "^1.15.0",
     "google-auth-library": "^9.11.0",
+    "google-trends-api": "^4.9.2",
     "googleapis": "^140.0.1",
     "lucide-react": "^0.475.0",
     "next": "15.3.3",

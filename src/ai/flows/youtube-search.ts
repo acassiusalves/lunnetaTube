@@ -95,7 +95,7 @@ const searchYoutubeVideosFlow = ai.defineFlow(
                 type: 'video',
                 regionCode: regionCode,
                 relevanceLanguage: input.relevanceLanguage,
-                maxResults: 25, // Limiting results to 25 to avoid overly long AI analysis
+                maxResults: 50, // Increased to 50 for more comprehensive results
                 pageToken: input.pageToken,
                 videoDuration: input.excludeShorts ? 'medium' : 'any',
                 publishedAfter: input.publishedAfter,
@@ -113,7 +113,7 @@ const searchYoutubeVideosFlow = ai.defineFlow(
                 regionCode: regionCode,
                 hl: input.relevanceLanguage, // Language for metadata
                 videoCategoryId: input.category,
-                maxResults: 25,
+                maxResults: 50,
                 pageToken: input.pageToken,
             });
 
@@ -150,7 +150,7 @@ const searchYoutubeVideosFlow = ai.defineFlow(
             const videoDetailsResponse = await youtubeApi.videos.list({
                 part: ['snippet', 'contentDetails', 'statistics'],
                 id: videoIds,
-                maxResults: 25,
+                maxResults: 50,
             });
             
             const filteredVideos = input.minViews

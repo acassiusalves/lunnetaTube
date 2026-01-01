@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { checkTrendGrowth } from './fetch-google-trends';
 
 const AnalyzeCommentsInputSchema = z.object({
   comments: z
@@ -18,6 +19,7 @@ const AnalyzeCommentsInputSchema = z.object({
     .describe('The comments to analyze. Provide all comments as one string.'),
   prompt: z.string().optional().describe('A custom prompt for the analysis.'),
   model: z.string().optional().describe('The model to use for the analysis.'),
+  videoTitle: z.string().optional().describe('The video title to check trend data.'),
 });
 export type AnalyzeCommentsInput = z.infer<typeof AnalyzeCommentsInputSchema>;
 
@@ -35,6 +37,12 @@ const AnalyzeCommentsOutputSchema = z.object({
   detectedWorkarounds: z.array(z.string()).max(10).describe('Gambiarras e processos manuais que as pessoas fazem'),
   complaintsAboutTools: z.array(z.string()).max(10).describe('Reclamações sobre ferramentas existentes'),
   saasOpportunities: z.array(SaasIdeaSchema).min(1).max(5).describe('Ideias de Micro SaaS identificadas'),
+  trendData: z.object({
+    growthPercent: z.number(),
+    isGrowing: z.boolean(),
+    lastValue: z.number(),
+    error: z.string().optional(),
+  }).optional().describe('Dados de tendência do Google Trends'),
 });
 export type AnalyzeCommentsOutput = z.infer<typeof AnalyzeCommentsOutputSchema>;
 
@@ -88,7 +96,7 @@ const analyzeCommentsFlow = ai.defineFlow(
     inputSchema: AnalyzeCommentsInputSchema,
     outputSchema: AnalyzeCommentsOutputSchema,
   },
-  async ({ comments, prompt: customPrompt, model }) => {
+  async ({ comments, prompt: customPrompt, model, videoTitle }) => {
 
     // Determine the prompt to use. If a custom prompt is provided, use it. Otherwise, use the default.
     // The final instruction for Brazilian Portuguese is included in both cases.
@@ -96,18 +104,32 @@ const analyzeCommentsFlow = ai.defineFlow(
       ? `${customPrompt}\n\nSua resposta deve estar em Português do Brasil.`
       : defaultPromptText;
 
-    const {output} = await ai.generate({
-      prompt: `${finalPrompt}\n\nComments:\n${comments}`,
-      model: model || 'googleai/gemini-2.5-pro',
-      output: {
-          schema: AnalyzeCommentsOutputSchema,
-          format: 'json',
-      },
-      config: {
-          temperature: 0.4, // Conservative temperature for stable JSON output
-      }
-    });
+    // Execute AI analysis and Google Trends in parallel
+    const [aiResult, trendResult] = await Promise.all([
+      ai.generate({
+        prompt: `${finalPrompt}\n\nComments:\n${comments}`,
+        model: model || 'googleai/gemini-2.5-pro',
+        output: {
+            schema: AnalyzeCommentsOutputSchema.omit({ trendData: true }),
+            format: 'json',
+        },
+        config: {
+            temperature: 0.4, // Conservative temperature for stable JSON output
+        }
+      }),
+      // Only check trends if videoTitle is provided
+      videoTitle ? checkTrendGrowth(videoTitle) : Promise.resolve(null)
+    ]);
 
-    return output!;
+    // Combine AI analysis with trend data
+    return {
+      ...aiResult.output!,
+      trendData: trendResult ? {
+        growthPercent: trendResult.growthPercent,
+        isGrowing: trendResult.isGrowing,
+        lastValue: trendResult.lastValue,
+        error: trendResult.error,
+      } : undefined
+    };
   }
 );

@@ -265,6 +265,7 @@ export default function AnalyzeVideoPage() {
         const allCommentsText = comments.map(c => c.text).join('\n\n---\n\n');
         const result = await analyzeCommentsAI({
             comments: allCommentsText,
+            videoTitle: video?.snippet?.title, // Pass video title for trend analysis
             ...(customPrompt && { prompt: customPrompt }),
             ...(aiModel && { model: aiModel }),
         });
@@ -495,7 +496,7 @@ export default function AnalyzeVideoPage() {
                             <h4 className="font-semibold text-lg">Oportunidades de Micro SaaS Detectadas</h4>
 
                             {/* Summary Stats */}
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 <Card className="bg-gradient-to-br from-red-50 to-orange-50">
                                     <CardContent className="pt-4 text-center">
                                         <div className="text-2xl font-bold text-red-600">
@@ -520,6 +521,17 @@ export default function AnalyzeVideoPage() {
                                         <div className="text-xs text-muted-foreground">Oportunidades</div>
                                     </CardContent>
                                 </Card>
+                                {/* Trend Card */}
+                                {analysis.trendData && !analysis.trendData.error && (
+                                    <Card className={`bg-gradient-to-br ${analysis.trendData.isGrowing ? 'from-green-50 to-emerald-50' : 'from-red-50 to-pink-50'}`}>
+                                        <CardContent className="pt-4 text-center">
+                                            <div className={`text-2xl font-bold ${analysis.trendData.isGrowing ? 'text-green-600' : 'text-red-600'}`}>
+                                                {analysis.trendData.isGrowing ? '📈' : '📉'} {analysis.trendData.growthPercent > 0 ? '+' : ''}{analysis.trendData.growthPercent}%
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">Tendência (12m)</div>
+                                        </CardContent>
+                                    </Card>
+                                )}
                             </div>
 
                             {/* Workarounds */}

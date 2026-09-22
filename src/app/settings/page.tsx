@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AI_MODELS, DEFAULT_MODEL, resolveModel } from "@/lib/ai-models";
 
 const API_KEY_STORAGE_ITEM = "youtube_api_key";
 const GEMINI_API_KEY_STORAGE_ITEM = "gemini_api_key";
@@ -53,7 +54,7 @@ export default function SettingsPage() {
   const [apiKey, setApiKey] = useState("");
   const [geminiApiKey, setGeminiApiKey] = useState("");
   const [commentAnalysisPrompt, setCommentAnalysisPrompt] = useState("");
-  const [aiModel, setAiModel] = useState("googleai/gemini-2.5-pro");
+  const [aiModel, setAiModel] = useState(DEFAULT_MODEL);
   const [facebookAccessToken, setFacebookAccessToken] = useState("");
   const [isYouTubeConnected, setIsYouTubeConnected] = useState(false);
   const [isGeminiConnected, setIsGeminiConnected] = useState(false);
@@ -92,7 +93,10 @@ export default function SettingsPage() {
           setIsFacebookConnected(true);
         }
         if (savedModel) {
-          setAiModel(savedModel);
+          // Modelos antigos/desativados salvos antes viram o padrão atual
+          const model = resolveModel(savedModel);
+          setAiModel(model);
+          if (model !== savedModel) localStorage.setItem(AI_MODEL_STORAGE_ITEM, model);
         }
         if (savedPrompt) {
           setCommentAnalysisPrompt(savedPrompt);
@@ -123,8 +127,9 @@ export default function SettingsPage() {
                 localStorage.setItem(FACEBOOK_ACCESS_TOKEN_STORAGE_ITEM, facebookAccessToken);
               }
               if (aiModel && !savedModel) {
-                setAiModel(aiModel);
-                localStorage.setItem(AI_MODEL_STORAGE_ITEM, aiModel);
+                const model = resolveModel(aiModel);
+                setAiModel(model);
+                localStorage.setItem(AI_MODEL_STORAGE_ITEM, model);
               }
               if (commentAnalysisPrompt && !savedPrompt) {
                 setCommentAnalysisPrompt(commentAnalysisPrompt);
@@ -385,7 +390,7 @@ export default function SettingsPage() {
                     Modelo de IA
                 </CardTitle>
                 <CardDescription>
-                    Escolha o modelo de inteligência artificial para realizar as análises. O modelo Pro é mais poderoso, mas pode ser mais lento.
+                    Escolha o modelo de inteligência artificial para realizar as análises. O Flash-Lite é mais rápido e barato; o 3.8 Flash dá análises melhores.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -396,12 +401,11 @@ export default function SettingsPage() {
                             <SelectValue placeholder="Selecione um modelo" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="googleai/gemini-1.5-flash">
-                                Gemini 1.5 Flash (Rápido e eficiente)
-                            </SelectItem>
-                             <SelectItem value="googleai/gemini-2.5-pro">
-                                Gemini 2.5 Pro (Mais poderoso)
-                            </SelectItem>
+                            {AI_MODELS.map((model) => (
+                                <SelectItem key={model.value} value={model.value}>
+                                    {model.label}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>

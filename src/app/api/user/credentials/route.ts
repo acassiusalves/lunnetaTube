@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveModel } from '@/lib/ai-models';
 
 // Simple encryption for sensitive data (base64 encoding for now)
 // In production, use proper encryption like AES-256
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
       youtubeApiKey: data.youtubeApiKey ? decrypt(data.youtubeApiKey) : '',
       geminiApiKey: data.geminiApiKey ? decrypt(data.geminiApiKey) : '',
       facebookAccessToken: data.facebookAccessToken ? decrypt(data.facebookAccessToken) : '',
-      aiModel: data.aiModel || 'gemini-1.5-flash',
+      aiModel: resolveModel(data.aiModel),
       commentAnalysisPrompt: data.commentAnalysisPrompt || '',
     };
 
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
       youtubeApiKey: youtubeApiKey ? encrypt(youtubeApiKey) : '',
       geminiApiKey: geminiApiKey ? encrypt(geminiApiKey) : '',
       facebookAccessToken: facebookAccessToken ? encrypt(facebookAccessToken) : '',
-      aiModel: aiModel || 'gemini-1.5-flash',
+      aiModel: resolveModel(aiModel),
       commentAnalysisPrompt: commentAnalysisPrompt || '',
       updatedAt: new Date().toISOString(),
     };

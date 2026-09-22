@@ -108,6 +108,24 @@ const dataAiHints: {[key: string]: string} = {
   'S4zBSP01D38': 'finance graph',
 };
 
+// Desde 15/10/2024 um Short pode ter até 3 minutos. A API não informa se um
+// vídeo é Short, então usamos a duração como critério.
+export const SHORTS_MAX_SECONDS = 180;
+
+// Converte a duração ISO 8601 da API (ex.: PT1H2M3S, P1DT2H) em segundos
+export const parseDurationSeconds = (duration?: string | null): number => {
+  const match = duration?.match(/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/);
+  if (!match) return 0;
+  const [, d, h, m, s] = match.map(v => parseInt(v || '0', 10));
+  return d * 86400 + h * 3600 + m * 60 + s;
+};
+
+// Shorts: duração conhecida e de até 3 minutos (lives em andamento vêm como P0D)
+export const isShortDuration = (duration?: string | null): boolean => {
+  const seconds = parseDurationSeconds(duration);
+  return seconds > 0 && seconds <= SHORTS_MAX_SECONDS;
+};
+
 const formatDuration = (duration: string): string => {
   if (!duration) return "00:00";
   const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
@@ -162,9 +180,6 @@ export const calculateMetrics = (video: Video): Video => {
 
 export const mapApiToVideo = (apiVideo: any): Video => {
   const duration = formatDuration(apiVideo.contentDetails?.duration);
-  const totalSeconds = (parseInt(apiVideo.contentDetails?.duration?.match(/(\d+)S/)?.[1] || '0', 10)) +
-                     (parseInt(apiVideo.contentDetails?.duration?.match(/(\d+)M/)?.[1] || '0', 10) * 60) +
-                     (parseInt(apiVideo.contentDetails?.duration?.match(/(\d+)H/)?.[1] || '0', 10) * 3600);
 
   const video: Video = {
     id: apiVideo.id.videoId || apiVideo.id,
@@ -180,7 +195,7 @@ export const mapApiToVideo = (apiVideo: any): Video => {
     channel: apiVideo.snippet.channelTitle,
     channelId: apiVideo.snippet.channelId,
     category: 'Desconhecido', // This will be updated later or can be fetched with categories
-    isShort: totalSeconds <= 60,
+    isShort: isShortDuration(apiVideo.contentDetails?.duration),
     dataAiHint: dataAiHints[apiVideo.id.videoId || apiVideo.id] || 'youtube video',
     commentsData: apiVideo.commentsData || [],
     tags: apiVideo.snippet.tags || [],

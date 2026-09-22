@@ -197,8 +197,20 @@ export function getCountryByCode(code: string): Country | undefined {
   return COUNTRIES.find(c => c.value === code.toUpperCase());
 }
 
-export function getLanguageByCountry(code: string): string {
-  return getCountryByCode(code)?.lang || 'pt';
+// Códigos `hl` do YouTube que diferem do ISO 639-1 esperado pelo relevanceLanguage
+const RELEVANCE_LANGUAGE_OVERRIDES: Record<string, string> = {
+  'pt-PT': 'pt',
+  iw: 'he',
+  fil: 'tl',
+  'zh-HK': 'zh-Hant',
+  'zh-TW': 'zh-Hant',
+};
+
+// Idioma do país no formato do parâmetro relevanceLanguage do search.list
+export function getRelevanceLanguage(code: string): string | undefined {
+  const lang = getCountryByCode(code)?.lang;
+  if (!lang) return undefined;
+  return RELEVANCE_LANGUAGE_OVERRIDES[lang] || lang;
 }
 
 // Nome do idioma (em inglês) para o fluxo de tradução

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { COUNTRIES, getCountryByCode, getLanguageByCountry } from '@/lib/countries';
+import { COUNTRIES, getCountryByCode } from '@/lib/countries';
 import { fetchTrendingLatam } from '@/ai/flows/fetch-trending-latam';
 import { MultiSelectCountries } from '@/components/ui/multi-select-countries';
 import { Loader2, Search, Terminal, Sparkles, Languages } from 'lucide-react';
@@ -37,6 +37,16 @@ export type VideoCategory = z.infer<typeof VideoCategorySchema>;
 
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
+
+// Cada país consome 1 chamada de search.list (limite padrão: 100 por dia)
+const MAX_COUNTRIES = 10;
+
+// Janela de publicação usada para definir o que está "em alta"
+const PERIOD_OPTIONS = [
+  { value: '1', label: 'Últimas 24 horas' },
+  { value: '7', label: 'Últimos 7 dias' },
+  { value: '30', label: 'Últimos 30 dias' },
+];
 
 type LoadingStatus = {
   active: boolean;
@@ -101,8 +111,12 @@ export default function TrendingPage() {
   const [excludeMusic, setExcludeMusic] = useState(true);
   const [excludeGaming, setExcludeGaming] = useState(true);
   const [isMultiCountry, setIsMultiCountry] = useState(false);
+  const [period, setPeriod] = useState('7');
+  // Início da janela da última busca, reaproveitado no "Carregar Mais"
+  const [publishedAfter, setPublishedAfter] = useState<string | undefined>();
 
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'views', direction: 'descending' });
+  // "Em alta" = ritmo de visualizações, não o total acumulado
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'viewsPerDay', direction: 'descending' });
 
   // Estado de tradução
   const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
@@ -241,9 +255,6 @@ export default function TrendingPage() {
   // Atualizar isMultiCountry quando seleção mudar
   useEffect(() => {
     setIsMultiCountry(selectedCountries.length > 1);
-    if (selectedCountries.length > 1) {
-      setCategory('all'); // Forçar "Todas" quando multi-país
-    }
   }, [selectedCountries]);
 
   const loadCategories = useCallback(async (regionCode: string) => {
@@ -273,12 +284,13 @@ export default function TrendingPage() {
     }
   }, [toast]);
 
+  // Carregar categorias do primeiro país selecionado (só quando ele muda)
+  const firstCountry = selectedCountries[0];
   useEffect(() => {
-    // Carregar categorias do primeiro país selecionado
-    if (selectedCountries.length > 0) {
-      loadCategories(selectedCountries[0]);
+    if (firstCountry) {
+      loadCategories(firstCountry);
     }
-  }, [selectedCountries, loadCategories]);
+  }, [firstCountry, loadCategories]);
 
 
   const handleSearch = async (isLoadMore = false) => {
@@ -300,21 +312,22 @@ export default function TrendingPage() {
       return;
     }
 
+    const windowStart = isLoadMore && publishedAfter
+      ? publishedAfter
+      : new Date(Date.now() - parseInt(period, 10) * 24 * 60 * 60 * 1000).toISOString();
+    if (!isLoadMore) setPublishedAfter(windowStart);
+
     try {
       if (selectedCountries.length > 1) {
         // BUSCA MULTI-PAÍS
-        const countries = selectedCountries.map(code => ({
-          code,
-          lang: getLanguageByCountry(code)
-        }));
-
         const result = await fetchTrendingLatam({
           apiKey,
-          countries,
+          countries: selectedCountries,
           excludeShorts,
           excludeMusic,
           excludeGaming,
           category: category === 'all' ? undefined : category,
+          publishedAfter: windowStart,
         });
 
         if (result.errors.length > 0) {
@@ -346,8 +359,8 @@ export default function TrendingPage() {
         const result = await searchYoutubeVideos({
           type: 'trending',
           country: selectedCountries[0],
-          relevanceLanguage: getLanguageByCountry(selectedCountries[0]),
           category: category === 'all' ? undefined : category,
+          publishedAfter: windowStart,
           excludeShorts,
           excludeMusic,
           excludeGaming,
@@ -503,7 +516,7 @@ export default function TrendingPage() {
         <header>
           <h1 className="text-3xl font-bold tracking-tight">Vídeos em Alta</h1>
           <p className="text-muted-foreground">
-            Descubra o que está em alta em diferentes categorias e países.
+            Os vídeos mais vistos entre os publicados recentemente, por país e categoria, ordenados por visualizações por dia.
           </p>
         </header>
 
@@ -511,12 +524,12 @@ export default function TrendingPage() {
           <CardHeader>
             <CardTitle>Filtros de Tendências</CardTitle>
             <CardDescription>
-              Selecione os filtros para encontrar os vídeos mais populares.
+              Cada país selecionado consome 1 das 100 buscas diárias da sua chave do YouTube.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="space-y-6">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="countries">
                     Países
@@ -531,18 +544,13 @@ export default function TrendingPage() {
                     selectedCountries={selectedCountries}
                     onSelectionChange={setSelectedCountries}
                     placeholder="Selecione 1 ou mais países..."
+                    maxSelected={MAX_COUNTRIES}
                   />
+                  <p className="text-xs text-muted-foreground">Até {MAX_COUNTRIES} países por busca.</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">
-                    Categoria
-                    {isMultiCountry && (
-                      <span className="ml-2 text-xs font-normal text-muted-foreground">
-                        (desabilitado em multi-país)
-                      </span>
-                    )}
-                  </Label>
-                  <Select value={category} onValueChange={setCategory} disabled={isLoadingCategories || isMultiCountry}>
+                  <Label htmlFor="category">Categoria</Label>
+                  <Select value={category} onValueChange={setCategory} disabled={isLoadingCategories}>
                     <SelectTrigger id="category">
                       <div className="flex items-center gap-2">
                         {isLoadingCategories && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -557,12 +565,25 @@ export default function TrendingPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="period">Publicados em</Label>
+                  <Select value={period} onValueChange={setPeriod}>
+                    <SelectTrigger id="period">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PERIOD_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-6">
                   <div className="flex items-center space-x-2">
                     <Checkbox id="exclude-shorts-trending" checked={excludeShorts} onCheckedChange={(c) => setExcludeShorts(c as boolean)} />
-                    <Label htmlFor="exclude-shorts-trending" className="text-sm font-normal">Excluir Shorts</Label>
+                    <Label htmlFor="exclude-shorts-trending" className="text-sm font-normal">Excluir Shorts (até 3 min)</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox id="exclude-music-trending" checked={excludeMusic} onCheckedChange={(c) => setExcludeMusic(c as boolean)} />

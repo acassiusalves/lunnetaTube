@@ -16,11 +16,12 @@ const API_THROTTLE_MS = 150;
 
 export interface FetchTrendingLatamInput {
   apiKey: string;
-  countries: Array<{ code: string; lang: string }>;
+  countries: string[]; // Códigos ISO (BR, PT, US...)
   excludeShorts?: boolean;
   excludeMusic?: boolean;
   excludeGaming?: boolean;
   category?: string;
+  publishedAfter?: string; // RFC 3339 - início do período "em alta"
   maxResultsPerCountry?: number;
 }
 
@@ -52,28 +53,28 @@ export async function fetchTrendingLatam(
 
   console.log(`[LATAM] Iniciando busca em ${params.countries.length} países...`);
 
-  for (const country of params.countries) {
+  for (const code of params.countries) {
     try {
-      console.log(`[LATAM] Buscando trending em ${country.code}...`);
+      console.log(`[LATAM] Buscando trending em ${code}...`);
 
       const result = await searchYoutubeVideos({
         type: 'trending',
-        country: country.code.toUpperCase(),
-        relevanceLanguage: country.lang,
+        country: code.toUpperCase(),
         excludeShorts: params.excludeShorts ?? true,
         excludeMusic: params.excludeMusic ?? true,
         excludeGaming: params.excludeGaming ?? true,
         category: params.category === 'all' ? undefined : params.category,
+        publishedAfter: params.publishedAfter,
         apiKey: params.apiKey,
       });
 
       if (result.error) {
-        console.error(`[LATAM] Erro em ${country.code}:`, result.error);
-        errors.push(`${country.code}: ${result.error}`);
+        console.error(`[LATAM] Erro em ${code}:`, result.error);
+        errors.push(`${code}: ${result.error}`);
         results.push({
-          country: country.code,
-          countryName: getCountryName(country.code),
-          flag: getCountryFlag(country.code),
+          country: code,
+          countryName: getCountryName(code),
+          flag: getCountryFlag(code),
           videos: [],
           error: result.error,
         });
@@ -81,28 +82,28 @@ export async function fetchTrendingLatam(
         const videos = result.videos || [];
         totalVideos += videos.length;
 
-        console.log(`[LATAM] ${country.code}: ${videos.length} vídeos encontrados`);
+        console.log(`[LATAM] ${code}: ${videos.length} vídeos encontrados`);
 
         results.push({
-          country: country.code,
-          countryName: getCountryName(country.code),
-          flag: getCountryFlag(country.code),
+          country: code,
+          countryName: getCountryName(code),
+          flag: getCountryFlag(code),
           videos: videos,
           nextPageToken: result.nextPageToken,
         });
       }
 
       // Throttle leve entre chamadas (evita quota burst)
-      if (params.countries.indexOf(country) < params.countries.length - 1) {
+      if (params.countries.indexOf(code) < params.countries.length - 1) {
         await sleep(API_THROTTLE_MS);
       }
     } catch (e: any) {
-      console.error(`[LATAM] Exceção em ${country.code}:`, e);
-      errors.push(`${country.code}: ${e.message}`);
+      console.error(`[LATAM] Exceção em ${code}:`, e);
+      errors.push(`${code}: ${e.message}`);
       results.push({
-        country: country.code,
-        countryName: getCountryName(country.code),
-        flag: getCountryFlag(country.code),
+        country: code,
+        countryName: getCountryName(code),
+        flag: getCountryFlag(code),
         videos: [],
         error: e.message,
       });

@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Video, mapApiToVideo, CommentData } from "@/lib/data";
 import { searchYoutubeVideos } from "@/ai/flows/youtube-search";
 import { fetchTopComments } from "@/ai/flows/fetch-comments";
@@ -31,7 +32,18 @@ type LoadingStatus = {
 };
 
 export default function DashboardPage() {
+  // useSearchParams precisa de um Suspense boundary no App Router
+  return (
+    <Suspense>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
   const { toast } = useToast();
+  const queryParam = useSearchParams().get("q")?.trim() || "";
+  const lastQueryRef = useRef<string | null>(null);
   const { searchState, setSearchState, clearSearchState } = useSearch();
 
   const [loadingStatus, setLoadingStatus] = useState<LoadingStatus>({ active: false, message: '', progress: 0 });
@@ -294,13 +306,21 @@ export default function DashboardPage() {
     return sorted;
   }, [searchState.videos, sortConfig]);
 
+  // Busca disparada pelo campo do Header (/buscador-youtube?q=...)
+  useEffect(() => {
+    if (!queryParam || lastQueryRef.current === queryParam) return;
+    lastQueryRef.current = queryParam;
+    handleSearch({ type: 'keyword', keyword: queryParam, country: 'BR', minViews: 0, excludeShorts: false, order: 'relevance' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryParam]);
+
   const canLoadMore = !!searchState.nextPageToken;
 
   return (
     <YouTubeLayout>
       <div className="space-y-6">
         {/* Search Filters */}
-        <SearchFilters onSearch={handleSearchSubmit} isLoading={loadingStatus.active} />
+        <SearchFilters onSearch={handleSearchSubmit} isLoading={loadingStatus.active} initialKeyword={queryParam} />
 
         {/* Analyze All Button */}
         {searchState.videos.length > 0 && !loadingStatus.active && (

@@ -76,6 +76,13 @@ https://developers.google.com/youtube/v3/docs/videos/list?hl=en&apix=true&apix_p
 
 Execute da mesma forma. Esperado: cada item traz `player.embedWidth` e `player.embedHeight`, com altura maior que a largura nos Shorts.
 
+> **Resultado (executado em 2026-09-22):** `#shorts` retornou 1.000.000 de resultados, mas globais e em inglês
+> (ex.: animações de Roblox), mesmo com `regionCode=BR` e `relevanceLanguage=pt`. Termos locais
+> (`dicas|"como fazer"|truque|"você sabia"`) retornaram 859.006 resultados em português do Brasil. Decisão do
+> usuário: sem tema, usar termos locais (Task 4). O teste do `videos.list` voltou 403 por cota esgotada da
+> chave compartilhada do APIs Explorer; o código mantém o plano B (decidir só pela duração quando a proporção
+> não vier).
+
 - [ ] **Step 4: Registrar a decisão.**
   - Se o Step 2 falhar (0 resultados), use `'shorts'` no lugar de `'#shorts'` em `DEFAULT_SHORTS_QUERY` (Task 4) e repita o Step 2 com `q=shorts`.
   - Se o Step 3 não trouxer `embedWidth`/`embedHeight`, mantenha o código da Task 4 como está: `isShortVideo` já decide só pela duração quando a proporção não vem.
@@ -568,7 +575,7 @@ git commit -m "feat(shorts): prompt e exportação do relatório de comentários
   - `isShortVideo`, `computeShortMetrics`, `ShortVideo`, `ShortsSearchOrder` (Task 2)
   - `getCountryByCode`, `getLanguageName`, `getRelevanceLanguage` de `src/lib/countries.ts`
   - `parseDurationSeconds` de `src/lib/data.ts`
-  - `translateKeyword({ text, targetLanguage }): Promise<{ translatedText: string }>` de `src/ai/flows/translate-keyword.ts`
+  - `translateKeyword({ text, targetLanguage }): Promise<{ translatedText: string }>` de `src/ai/flows/translate-keyword.ts` (sem `GEMINI_API_KEY`, lança erro: o fluxo mantém o texto original)
   - `fetchChannelStats({ channelIds, apiKey }): Promise<{ channelStats: Record<string, { subscriberCount: number }>; error?: string }>` de `src/ai/flows/fetch-channel-stats.ts` (retorna `subscriberCount = 0` quando oculto)
 - Produces:
   - `searchShorts(input: SearchShortsInput): Promise<SearchShortsOutput>`
@@ -669,7 +676,7 @@ beforeEach(() => {
   searchError = null;
 });
 
-test('sem tema usa #shorts e mantém só Shorts verticais de até 3 min', async () => {
+test('sem tema usa os termos locais e mantém só Shorts verticais de até 3 min', async () => {
   searchIds = ['vertical', 'horizontal', 'longo', 'semProporcao'];
   videoFixtures = {
     vertical: { duration: 'PT45S', width: 360, height: 640, channelId: 'c1', views: '100000' },
@@ -686,7 +693,7 @@ test('sem tema usa #shorts e mantém só Shorts verticais de até 3 min', async 
   assert.equal(result.nextPageToken, 'NEXT');
 
   const search = calls.find(c => c.method === 'search')!.params;
-  assert.equal(search.q, '#shorts');
+  assert.equal(search.q, 'dicas|"como fazer"|truque|"você sabia"');
   assert.deepEqual(search.type, ['video']);
   assert.equal(search.videoDuration, 'short');
   assert.equal(search.order, 'viewCount');
@@ -731,6 +738,15 @@ test('usa o tema como q e repassa ordenação e paginação', async () => {
   assert.equal(calls.filter(c => c.method === 'videos').length, 0);
 });
 
+test('sem tema em país de outro idioma usa os termos em inglês quando a tradução falha', async () => {
+  await searchShorts({ ...BASE, country: 'JP' });
+
+  const search = calls[0].params;
+  assert.equal(search.q, 'tips|"how to"|hack|"did you know"');
+  assert.equal(search.relevanceLanguage, 'ja');
+  assert.equal(search.regionCode, 'JP');
+});
+
 test('cota esgotada vira mensagem clara', async () => {
   searchError = { response: { data: { error: { message: 'quota', errors: [{ reason: 'quotaExceeded' }] } } } };
 
@@ -765,8 +781,25 @@ import { getCountryByCode, getLanguageName, getRelevanceLanguage } from '@/lib/c
 import { parseDurationSeconds } from '@/lib/data';
 import { computeShortMetrics, isShortVideo, type ShortVideo } from '@/lib/shorts';
 
-// search.list não retorna nada sem q. Sem tema, buscamos a hashtag usada nos Shorts
-const DEFAULT_SHORTS_QUERY = '#shorts';
+// search.list não retorna nada sem q, e "#shorts" traz Shorts globais em inglês mesmo com
+// regionCode e relevanceLanguage (testado no APIs Explorer em 2026-09-22). Sem tema, usamos
+// termos locais de formatos parecidos com criativos: dicas, tutoriais, truques e curiosidades
+const DEFAULT_SHORTS_TERMS: Record<string, string> = {
+  pt: 'dicas|"como fazer"|truque|"você sabia"',
+  es: 'consejos|"cómo hacer"|truco|"sabías que"',
+  en: 'tips|"how to"|hack|"did you know"',
+};
+
+// Traduz para o idioma do país; se o Gemini falhar, mantém o texto original
+async function translateOrKeep(text: string, targetLanguage: string, country: string): Promise<string> {
+  try {
+    const translation = await translateKeyword({ text, targetLanguage });
+    return translation.translatedText;
+  } catch (e) {
+    console.warn(`[searchShorts] Falha ao traduzir para ${country}. Usando o texto original.`, e);
+    return text;
+  }
+}
 
 const SearchShortsInputSchema = z.object({
   apiKey: z.string().describe('The YouTube Data API v3 key.'),
@@ -801,17 +834,17 @@ const searchShortsFlow = ai.defineFlow(
     try {
       const country = input.country.toUpperCase();
       const countryInfo = getCountryByCode(country);
+      const relevanceLanguage = getRelevanceLanguage(country);
+      // Países de língua portuguesa não precisam de tradução
+      const translateTo = countryInfo && !countryInfo.lang.startsWith('pt') ? getLanguageName(countryInfo.lang) : undefined;
 
       let q = (input.topic || '').trim();
-      if (!q) {
-        q = DEFAULT_SHORTS_QUERY;
-      } else if (countryInfo && !countryInfo.lang.startsWith('pt')) {
-        try {
-          const translation = await translateKeyword({ text: q, targetLanguage: getLanguageName(countryInfo.lang) });
-          q = translation.translatedText;
-        } catch (e) {
-          console.warn(`[searchShorts] Falha ao traduzir o tema para ${country}. Usando o original.`, e);
-        }
+      if (q) {
+        if (translateTo) q = await translateOrKeep(q, translateTo, country);
+      } else {
+        const localTerms = DEFAULT_SHORTS_TERMS[relevanceLanguage || 'pt'];
+        q = localTerms || DEFAULT_SHORTS_TERMS.en;
+        if (!localTerms && translateTo) q = await translateOrKeep(DEFAULT_SHORTS_TERMS.en, translateTo, country);
       }
 
       const searchResponse = await youtubeApi.search.list({
@@ -820,7 +853,7 @@ const searchShortsFlow = ai.defineFlow(
         type: ['video'],
         videoDuration: 'short', // menos de 4 minutos
         regionCode: country,
-        relevanceLanguage: getRelevanceLanguage(country),
+        relevanceLanguage,
         publishedAfter: input.publishedAfter,
         order: input.order,
         maxResults: 50,
@@ -896,12 +929,11 @@ const searchShortsFlow = ai.defineFlow(
 );
 ```
 
-Se a Task 1 decidiu trocar o termo padrão, use `'shorts'` em `DEFAULT_SHORTS_QUERY` e ajuste a asserção `search.q` do primeiro teste.
 
 - [ ] **Step 4: Rodar e confirmar que passa**
 
 Run: `npx tsx --test src/ai/flows/search-shorts.test.ts`
-Expected: `# pass 4` e `# fail 0`. Logs de erro no console são esperados no teste de cota.
+Expected: `# pass 5` e `# fail 0`. Logs no console são esperados nos testes de cota e de tradução.
 
 - [ ] **Step 5: Typecheck do arquivo novo**
 
@@ -1649,7 +1681,7 @@ export default function ShortsPage() {
                 placeholder="Ex.: emagrecimento, skincare, renda extra..."
               />
               <p className="text-xs text-muted-foreground">
-                Em branco, busca os Shorts em geral do país (#shorts). O tema é traduzido para o idioma do país.
+                Em branco, busca Shorts de dicas, tutoriais, truques e curiosidades do país. O tema é traduzido para o idioma do país.
               </p>
             </div>
 
@@ -1827,7 +1859,7 @@ Expected: `✓ Generating static pages` e uma linha `○ /shorts`, sem `Error` n
 - [ ] **Step 5: Rodar todos os testes**
 
 Run: `npm test 2>&1 | grep -E "^# (pass|fail)"`
-Expected: `# pass 16` e `# fail 0`.
+Expected: `# pass 17` e `# fail 0`.
 
 - [ ] **Step 6: Commit**
 
@@ -1912,7 +1944,7 @@ gh pr create --base master --head claude/shorts-feature --title "feat: busca de 
 ## O que é
 Nova página **Shorts** (`/shorts`) para encontrar Shorts que estão escalando e usá-los como inspiração de criativos para anúncios no Facebook.
 
-- **Busca:** tema opcional (traduzido para o idioma do país; em branco usa `#shorts`), país, "Buscar por" (Mais vistos, Mais recentes, Mais relevantes) e período (24 horas a 90 dias). Cada busca gasta 1 chamada de `search.list`.
+- **Busca:** tema opcional (traduzido para o idioma do país; em branco usa termos locais de dicas, tutoriais, truques e curiosidades), país, "Buscar por" (Mais vistos, Mais recentes, Mais relevantes) e período (24 horas a 90 dias). Cada busca gasta 1 chamada de `search.list`.
 - **Identificação de Short:** até 3 minutos e vertical (`player.embedWidth`/`embedHeight`).
 - **Métricas:** viralização (views ÷ inscritos), velocidade (views/dia), views e engajamento, com ordenação na tela.
 - **Grade de cards 9:16**, com o player abrindo na própria página.
@@ -1923,7 +1955,7 @@ Plano: `docs/superpowers/plans/2026-09-22-shorts-criativos.md`
 
 ## Testes
 - Validação da API (APIs Explorer): RESULTADO DA TASK 1
-- `npm test`: 16 testes (métricas, relatório, busca e análise com a YouTube API simulada)
+- `npm test`: 17 testes (métricas, relatório, busca e análise com a YouTube API simulada)
 - `tsc` sem erros nos arquivos novos; `next build` passando
 - Conferência visual dos cards, do player e do painel com dados fictícios
 

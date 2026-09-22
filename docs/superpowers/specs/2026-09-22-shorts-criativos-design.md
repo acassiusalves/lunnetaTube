@@ -42,16 +42,22 @@ pelo middleware, como as demais.
 
 | Campo | Valores | Padrão |
 |---|---|---|
-| Tema | texto livre, opcional; traduzido para o idioma do país (fluxo `translateKeyword`) | vazio → `#shorts` |
+| Tema | texto livre, opcional; traduzido para o idioma do país (fluxo `translateKeyword`) | vazio → termos locais (abaixo) |
 | País | um dos 109 de `COUNTRIES` | Brasil |
 | Buscar por | Mais vistos (`viewCount`), Mais recentes (`date`), Mais relevantes (`relevance`) | Mais vistos |
 | Publicados em | 24 horas, 7 dias, 30 dias, 90 dias | 7 dias |
 
 Botões **Buscar** e **Carregar mais** (a paginação usa `nextPageToken`).
 
+Termos locais usados sem tema (validado no APIs Explorer em 2026-09-22: `#shorts` trazia
+Shorts globais em inglês mesmo com `regionCode=BR`, e os termos locais trouxeram Shorts
+brasileiros): pt `dicas|"como fazer"|truque|"você sabia"`; es
+`consejos|"cómo hacer"|truco|"sabías que"`; en `tips|"how to"|hack|"did you know"`. Nos
+demais idiomas, a versão em inglês é traduzida pelo Gemini; se falhar, usa o inglês.
+
 ### Busca no servidor (`searchShorts`)
 
-1. `search.list`: `q` (tema traduzido ou `#shorts`), `type=video`, `videoDuration=short`,
+1. `search.list`: `q` (tema traduzido ou termos locais), `type=video`, `videoDuration=short`,
    `regionCode`, `relevanceLanguage` (`getRelevanceLanguage`), `publishedAfter`,
    `order`, `maxResults=50`, `pageToken`.
 2. `videos.list` com `part=snippet,contentDetails,statistics,player` e `maxHeight=640`,

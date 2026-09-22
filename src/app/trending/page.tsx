@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries } from '@/lib/data';
-import { LATAM_COUNTRIES, getLanguageByCountry } from '@/lib/latam-config';
+import { TRENDING_COUNTRIES, getLanguageByCountry } from '@/lib/latam-config';
 import { fetchTrendingLatam } from '@/ai/flows/fetch-trending-latam';
 import { MultiSelectCountries } from '@/components/ui/multi-select-countries';
 import { Loader2, Search, Terminal, Sparkles, Languages } from 'lucide-react';
@@ -303,7 +303,7 @@ export default function TrendingPage() {
 
     try {
       if (selectedCountries.length > 1) {
-        // BUSCA MULTI-PAÍS (LATAM)
+        // BUSCA MULTI-PAÍS
         const countries = selectedCountries.map(code => ({
           code,
           lang: getLanguageByCountry(code)
@@ -339,7 +339,7 @@ export default function TrendingPage() {
         setNextPageToken(undefined); // Não suporta paginação multi-país por enquanto
 
         toast({
-          title: "Busca LATAM concluída!",
+          title: "Busca multi-país concluída!",
           description: `${result.totalVideos} vídeos de ${result.countriesProcessed} países`
         });
       } else {
@@ -363,7 +363,7 @@ export default function TrendingPage() {
           const newVideos = result.videos?.map((video: any) => ({
             ...mapApiToVideo(video),
             sourceCountry: selectedCountries[0],
-            sourceCountryFlag: LATAM_COUNTRIES.find(c => c.value === selectedCountries[0])?.flag || '🌎',
+            sourceCountryFlag: TRENDING_COUNTRIES.find(c => c.value === selectedCountries[0])?.flag || '🌎',
           })) || [];
 
           setVideos(prev => isLoadMore ? [...prev, ...newVideos] : newVideos);
@@ -520,7 +520,7 @@ export default function TrendingPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="countries-latam">
-                    Países LATAM
+                    Países
                     {isMultiCountry && (
                       <span className="ml-2 text-xs font-normal text-orange-600">
                         🌎 Modo Multi-País Ativo
@@ -528,7 +528,7 @@ export default function TrendingPage() {
                     )}
                   </Label>
                   <MultiSelectCountries
-                    countries={LATAM_COUNTRIES}
+                    countries={TRENDING_COUNTRIES}
                     selectedCountries={selectedCountries}
                     onSelectionChange={setSelectedCountries}
                     placeholder="Selecione 1 ou mais países..."

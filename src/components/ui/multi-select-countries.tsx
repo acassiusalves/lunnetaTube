@@ -10,6 +10,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -17,10 +18,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import type { LatamCountry } from "@/lib/latam-config";
+import type { TrendingCountry } from "@/lib/latam-config";
 
 interface MultiSelectCountriesProps {
-  countries: LatamCountry[];
+  countries: TrendingCountry[];
   selectedCountries: string[];
   onSelectionChange: (selected: string[]) => void;
   placeholder?: string;
@@ -110,38 +111,41 @@ export function MultiSelectCountries({
       <PopoverContent className="w-full p-0">
         <Command>
           <CommandInput placeholder="Buscar país..." />
-          <CommandEmpty>Nenhum país encontrado.</CommandEmpty>
-          <CommandGroup>
-            {countries.map((country) => {
-              const isSelected = selectedCountries.includes(country.value);
-              const isDisabled = maxSelected && selectedCountries.length >= maxSelected && !isSelected;
+          <CommandList>
+            <CommandEmpty>Nenhum país encontrado.</CommandEmpty>
+            <CommandGroup>
+              {countries.map((country) => {
+                const isSelected = selectedCountries.includes(country.value);
+                const isDisabled = !!maxSelected && selectedCountries.length >= maxSelected && !isSelected;
 
-              return (
-                <CommandItem
-                  key={country.value}
-                  value={country.value}
-                  onSelect={() => {
-                    if (!isDisabled) {
-                      handleSelect(country.value);
-                    }
-                  }}
-                  disabled={isDisabled}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      isSelected ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <span className="mr-2">{country.flag}</span>
-                  {country.label}
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    {country.lang.toUpperCase()}
-                  </span>
-                </CommandItem>
-              );
-            })}
-          </CommandGroup>
+                return (
+                  <CommandItem
+                    key={country.value}
+                    // cmdk filtra pelo value: inclui o nome para a busca "Portugal" funcionar
+                    value={`${country.label} ${country.value}`}
+                    onSelect={() => {
+                      if (!isDisabled) {
+                        handleSelect(country.value);
+                      }
+                    }}
+                    disabled={isDisabled}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        isSelected ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <span className="mr-2">{country.flag}</span>
+                    {country.label}
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {country.lang.toUpperCase()}
+                    </span>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>

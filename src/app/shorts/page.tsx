@@ -63,12 +63,15 @@ export default function ShortsPage() {
   const [analyses, setAnalyses] = useState<Record<string, AnalysisState>>({});
   const [openAnalysisKey, setOpenAnalysisKey] = useState<string | null>(null);
 
+  const busy = isSearching || isLoadingMore;
+
   const sortedShorts = useMemo(() => sortShorts(shorts, sortKey), [shorts, sortKey]);
   const titles = useMemo(() => Object.fromEntries(shorts.map(short => [short.id, short.title])), [shorts]);
 
   const getApiKey = () => localStorage.getItem(API_KEY_STORAGE_ITEM);
 
   const runSearch = async (loadMore: boolean) => {
+    if (busy) return;
     const apiKey = getApiKey();
     setMissingKey(!apiKey);
     if (!apiKey) return;
@@ -216,7 +219,7 @@ export default function ShortsPage() {
               </div>
             </div>
 
-            <Button type="submit" disabled={isSearching}>
+            <Button type="submit" disabled={busy}>
               {isSearching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
               Buscar Shorts
             </Button>
@@ -284,7 +287,7 @@ export default function ShortsPage() {
 
       {lastQuery && nextPageToken && (
         <div className="flex justify-center">
-          <Button variant="outline" onClick={() => runSearch(true)} disabled={isLoadingMore}>
+          <Button variant="outline" onClick={() => runSearch(true)} disabled={busy}>
             {isLoadingMore && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Carregar mais
           </Button>

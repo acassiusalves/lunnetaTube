@@ -16,6 +16,8 @@ interface ShortCardProps {
   onAnalyze: () => void;
 }
 
+const decimalFormatter = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 function formatDuration(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
@@ -23,7 +25,7 @@ function formatDuration(seconds: number): string {
 
 function formatViralScore(score: number | null): string {
   if (score === null) return '—';
-  return `${score < 10 ? score.toFixed(1) : Math.round(score)}×`;
+  return `${score < 10 ? decimalFormatter.format(score) : Math.round(score)}×`;
 }
 
 export function ShortCard({ short, selected, selectDisabled, analyzing, onToggleSelect, onPlay, onAnalyze }: ShortCardProps) {
@@ -83,7 +85,7 @@ export function ShortCard({ short, selected, selectDisabled, analyzing, onToggle
           </div>
           <div>
             <dt className="text-muted-foreground">Engajamento</dt>
-            <dd className="font-semibold">{short.engagementRate.toFixed(1)}%</dd>
+            <dd className="font-semibold">{decimalFormatter.format(short.engagementRate)}%</dd>
           </div>
         </dl>
         <p className="text-xs text-muted-foreground">{formatTimeAgo(short.publishedAt)}</p>

@@ -38,7 +38,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
               variant="ghost"
               size="icon"
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="h-9 w-9"
+              className="h-9 w-9 shrink-0"
             >
               <Menu className="h-5 w-5" />
             </Button>

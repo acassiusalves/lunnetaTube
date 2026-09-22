@@ -22,7 +22,7 @@ import { isShortDuration } from '@/lib/data';
 const YoutubeSearchInputSchema = z.object({
   apiKey: z.string().describe("The YouTube Data API v3 key."),
   type: z.enum(['keyword', 'trending']).describe("The type of search to perform."),
-  keyword: z.string().optional().describe("The keyword to search for."),
+  keyword: z.string().optional().describe("The keyword to search for. For 'trending', an optional topic."),
   country: z.string().optional().describe("The country code for the search (will be uppercased)."),
   relevanceLanguage: z.string().optional().describe("ISO 639-1 language for search relevance. Defaults to the country's language."),
   minViews: z.number().optional().describe("The minimum number of views."),
@@ -49,6 +49,26 @@ export async function searchYoutubeVideos(input: YoutubeSearchInput): Promise<Yo
   return searchYoutubeVideosFlow(input);
 }
 
+// O search.list não retorna nada sem q. Em Tendências sem tema, usamos termos
+// amplos de conteúdo educativo (operador | = OU)
+const DEFAULT_TREND_TERMS: Record<string, string> = {
+  pt: 'curso|aula|tutorial|dicas|"como fazer"',
+  es: 'curso|clase|tutorial|consejos|"cómo hacer"',
+  en: 'course|lesson|tutorial|tips|"how to"',
+};
+
+type SearchDuration = 'any' | 'medium' | 'long';
+
+// Token de paginação combinado quando há mais de uma busca por página
+function parsePageTokens(pageToken?: string): Partial<Record<SearchDuration, string>> {
+  if (!pageToken) return {};
+  try {
+    return JSON.parse(pageToken);
+  } catch {
+    return {};
+  }
+}
+
 const searchYoutubeVideosFlow = ai.defineFlow(
   {
     name: 'searchYoutubeVideosFlow',
@@ -62,65 +82,97 @@ const searchYoutubeVideosFlow = ai.defineFlow(
     });
     
     try {
-        let searchTerm = input.keyword || '';
+        const isTrending = input.type === 'trending';
         const regionCode = input.country ? input.country.toUpperCase() : undefined;
         // regionCode só garante que o vídeo pode ser assistido no país; o idioma
         // é o que puxa resultados do mercado local
         const relevanceLanguage = input.relevanceLanguage || (input.country ? getRelevanceLanguage(input.country) : undefined);
+        const countryInfo = input.country ? getCountryByCode(input.country) : undefined;
+        // Traduz para o idioma do país, exceto países de língua portuguesa
+        const translateTo = countryInfo && !countryInfo.lang.startsWith('pt') ? getLanguageName(countryInfo.lang) : undefined;
 
-        if (input.type === 'keyword') {
-            // Translate keyword to the country's language (skip Portuguese-speaking countries)
-            const countryInfo = input.country ? getCountryByCode(input.country) : undefined;
-            if (countryInfo && !countryInfo.lang.startsWith('pt') && searchTerm) {
-                 try {
-                    const translationResult = await translateKeyword({
-                        text: searchTerm,
-                        targetLanguage: getLanguageName(countryInfo.lang),
-                    });
+        let searchTerm = (input.keyword || '').trim();
+        if (searchTerm) {
+            if (translateTo) {
+                try {
+                    const translationResult = await translateKeyword({ text: searchTerm, targetLanguage: translateTo });
                     searchTerm = translationResult.translatedText;
                 } catch (e) {
                     console.warn(`Keyword translation failed for country ${input.country}. Using original keyword.`, e);
                     // If translation fails, proceed with the original keyword
                 }
             }
+        } else if (isTrending) {
+            searchTerm = DEFAULT_TREND_TERMS[relevanceLanguage || 'pt'] || DEFAULT_TREND_TERMS.en;
+            if (!DEFAULT_TREND_TERMS[relevanceLanguage || 'pt'] && translateTo) {
+                try {
+                    const translationResult = await translateKeyword({ text: DEFAULT_TREND_TERMS.en, targetLanguage: translateTo });
+                    searchTerm = translationResult.translatedText;
+                } catch (e) {
+                    console.warn(`Default trend terms translation failed for country ${input.country}. Using English.`, e);
+                }
+            }
         }
 
         // Tendências: desde 21/07/2025 o chart=mostPopular do videos.list só traz
-        // os rankings de Música, Filmes e Games. "Em alta" passa a ser os vídeos
-        // mais vistos entre os publicados no período, via search.list.
-        const isTrending = input.type === 'trending';
-        const searchResponse = await youtubeApi.search.list({
-            part: ['snippet'],
-            q: isTrending ? undefined : searchTerm,
-            type: ['video'],
-            regionCode,
-            relevanceLanguage,
-            videoCategoryId: isTrending ? input.category : undefined,
-            maxResults: 50,
-            pageToken: input.pageToken,
-            // Não usamos videoDuration para excluir Shorts: "medium" só cobre 4-20 min e
-            // cortaria vídeos longos. O filtro é feito abaixo pela duração real.
-            publishedAfter: isTrending
-                ? input.publishedAfter || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-                : input.publishedAfter,
-            publishedBefore: input.publishedBefore,
-            order: isTrending ? 'viewCount' : input.order || 'relevance',
-        });
+        // os rankings de Música, Filmes e Games. "Em alta" = vídeos mais vistos
+        // publicados no período, via search.list.
+        // Com "Excluir Shorts", ordenar por visualizações traz quase só Shorts; então
+        // pedimos à API só vídeos de 4+ min (medium = 4-20 min, long = mais de 20 min).
+        // Na busca do Início (por relevância) o filtro é feito abaixo pela duração real,
+        // já que "medium" sozinho cortaria os vídeos longos.
+        const durations: SearchDuration[] = isTrending && input.excludeShorts ? ['medium', 'long'] : ['any'];
+        const pageTokens = durations.length > 1 ? parsePageTokens(input.pageToken) : { any: input.pageToken };
+        // Ao paginar, só continua as buscas que ainda têm próxima página
+        const activeDurations = input.pageToken ? durations.filter(d => pageTokens[d]) : durations;
 
-        const videoIds = searchResponse.data.items?.map(item => item.id?.videoId).filter((id): id is string => !!id) || [];
-        const nextPageToken = searchResponse.data.nextPageToken;
+        const searchResponses = await Promise.all(activeDurations.map(duration =>
+            youtubeApi.search.list({
+                part: ['snippet'],
+                q: searchTerm,
+                type: ['video'],
+                regionCode,
+                relevanceLanguage,
+                videoCategoryId: isTrending ? input.category : undefined,
+                videoDuration: duration,
+                maxResults: 50,
+                pageToken: pageTokens[duration],
+                publishedAfter: isTrending
+                    ? input.publishedAfter || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+                    : input.publishedAfter,
+                publishedBefore: input.publishedBefore,
+                order: isTrending ? 'viewCount' : input.order || 'relevance',
+            })
+        ));
+
+        const videoIds = [...new Set(searchResponses.flatMap(response =>
+            response.data.items?.map(item => item.id?.videoId).filter((id): id is string => !!id) || []
+        ))];
+
+        const nextTokens: Partial<Record<SearchDuration, string>> = {};
+        activeDurations.forEach((duration, i) => {
+            const token = searchResponses[i].data.nextPageToken;
+            if (token) nextTokens[duration] = token;
+        });
+        const nextPageToken = durations.length > 1
+            ? (Object.keys(nextTokens).length > 0 ? JSON.stringify(nextTokens) : undefined)
+            : nextTokens.any;
 
         if (videoIds.length === 0) {
             return { videos: [], nextPageToken: undefined };
         }
 
-        // Detalhes (duração, estatísticas, categoria) dos vídeos encontrados
-        const videoDetailsResponse = await youtubeApi.videos.list({
-            part: ['snippet', 'contentDetails', 'statistics'],
-            id: videoIds,
-        });
+        // Detalhes (duração, estatísticas, categoria), em lotes de até 50 ids
+        const detailBatches = [];
+        for (let i = 0; i < videoIds.length; i += 50) {
+            detailBatches.push(youtubeApi.videos.list({
+                part: ['snippet', 'contentDetails', 'statistics'],
+                id: videoIds.slice(i, i + 50),
+            }));
+        }
+        const detailItems = (await Promise.all(detailBatches)).flatMap(response => response.data.items || []);
 
-        let videoItems = (videoDetailsResponse.data.items || []).filter(v => {
+        let videoItems = detailItems.filter(v => {
             if (input.excludeShorts && isShortDuration(v.contentDetails?.duration)) return false;
             if (input.excludeMusic && v.snippet?.categoryId === '10') return false;
             if (input.excludeGaming && v.snippet?.categoryId === '20') return false;

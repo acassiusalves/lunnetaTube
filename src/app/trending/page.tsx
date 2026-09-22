@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { COUNTRIES, getCountryByCode } from '@/lib/countries';
 import { fetchTrendingLatam } from '@/ai/flows/fetch-trending-latam';
@@ -38,8 +39,8 @@ export type VideoCategory = z.infer<typeof VideoCategorySchema>;
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
 
-// Cada país consome 1 chamada de search.list (limite padrão: 100 por dia)
-const MAX_COUNTRIES = 10;
+// Cada país consome 1 ou 2 chamadas de search.list (limite padrão: 100 por dia)
+const MAX_COUNTRIES = 5;
 
 // Janela de publicação usada para definir o que está "em alta"
 const PERIOD_OPTIONS = [
@@ -112,6 +113,7 @@ export default function TrendingPage() {
   const [excludeGaming, setExcludeGaming] = useState(true);
   const [isMultiCountry, setIsMultiCountry] = useState(false);
   const [period, setPeriod] = useState('7');
+  const [topic, setTopic] = useState('');
   // Início da janela da última busca, reaproveitado no "Carregar Mais"
   const [publishedAfter, setPublishedAfter] = useState<string | undefined>();
 
@@ -323,6 +325,7 @@ export default function TrendingPage() {
         const result = await fetchTrendingLatam({
           apiKey,
           countries: selectedCountries,
+          keyword: topic.trim() || undefined,
           excludeShorts,
           excludeMusic,
           excludeGaming,
@@ -358,6 +361,7 @@ export default function TrendingPage() {
         // BUSCA SINGLE-PAÍS (original)
         const result = await searchYoutubeVideos({
           type: 'trending',
+          keyword: topic.trim() || undefined,
           country: selectedCountries[0],
           category: category === 'all' ? undefined : category,
           publishedAfter: windowStart,
@@ -416,7 +420,7 @@ export default function TrendingPage() {
 
       const analysisResult = await analyzeVideoPotential({
         videos: videosForAnalysis,
-        keyword: `trending ${category !== 'all' ? category : ''} videos in ${selectedCountries.join(', ')}`
+        keyword: topic.trim() || `trending ${category !== 'all' ? category : ''} videos in ${selectedCountries.join(', ')}`
       });
 
       if (analysisResult.highPotentialVideoIds) {
@@ -516,7 +520,7 @@ export default function TrendingPage() {
         <header>
           <h1 className="text-3xl font-bold tracking-tight">Vídeos em Alta</h1>
           <p className="text-muted-foreground">
-            Os vídeos mais vistos entre os publicados recentemente, por país e categoria, ordenados por visualizações por dia.
+            Os vídeos mais vistos entre os publicados recentemente, por tema, país e categoria, ordenados por visualizações por dia.
           </p>
         </header>
 
@@ -524,11 +528,23 @@ export default function TrendingPage() {
           <CardHeader>
             <CardTitle>Filtros de Tendências</CardTitle>
             <CardDescription>
-              Cada país selecionado consome 1 das 100 buscas diárias da sua chave do YouTube.
+              Cada país selecionado consome 2 das 100 buscas diárias da sua chave do YouTube (1 se "Excluir Shorts" estiver desmarcado).
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="topic">Tema ou nicho (opcional)</Label>
+                <Input
+                  id="topic"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="Ex.: emagrecimento, finanças pessoais, inglês..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Em branco, busca conteúdo educativo em geral (cursos, aulas, tutoriais, dicas). O tema é traduzido para o idioma de cada país.
+                </p>
+              </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="countries">

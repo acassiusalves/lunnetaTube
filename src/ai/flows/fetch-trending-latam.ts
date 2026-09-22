@@ -17,6 +17,7 @@ const API_THROTTLE_MS = 150;
 export interface FetchTrendingLatamInput {
   apiKey: string;
   countries: string[]; // Códigos ISO (BR, PT, US...)
+  keyword?: string;    // Tema opcional (traduzido para o idioma de cada país)
   excludeShorts?: boolean;
   excludeMusic?: boolean;
   excludeGaming?: boolean;
@@ -59,6 +60,7 @@ export async function fetchTrendingLatam(
 
       const result = await searchYoutubeVideos({
         type: 'trending',
+        keyword: params.keyword,
         country: code.toUpperCase(),
         excludeShorts: params.excludeShorts ?? true,
         excludeMusic: params.excludeMusic ?? true,

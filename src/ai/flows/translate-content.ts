@@ -5,7 +5,7 @@
  * @fileOverview A flow to translate video content (titles and comments) to Portuguese.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, FAST_MODEL } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const TranslateContentInputSchema = z.object({
@@ -62,7 +62,7 @@ Return ONLY valid JSON in this exact format:
       try {
         const { output } = await ai.generate({
           prompt: prompt,
-          model: 'googleai/gemini-2.0-flash',
+          model: FAST_MODEL,
           output: {
             schema: TranslateContentOutputSchema
           },

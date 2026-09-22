@@ -9,7 +9,7 @@
  * - TranslateKeywordOutput - The return type for the translateKeyword function.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, FAST_MODEL } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const TranslateKeywordInputSchema = z.object({
@@ -40,13 +40,14 @@ const translateKeywordFlow = ai.defineFlow(
     }
 
     const prompt = `Translate the following keyword/phrase to ${targetLanguage}.
-    Return ONLY the translated text, without any extra explanation, formatting, or quotation marks.
-    
-    Keyword: "${text}"`;
+    It is a YouTube search query: keep the search operators | and - unchanged, and keep double quotes around phrases that already have them.
+    Return ONLY the translated text, without any extra explanation or formatting.
+
+    Keyword: ${text}`;
 
     const { output } = await ai.generate({
       prompt: prompt,
-      model: 'googleai/gemini-1.5-flash',
+      model: FAST_MODEL,
       output: {
           schema: TranslateKeywordOutputSchema
       },

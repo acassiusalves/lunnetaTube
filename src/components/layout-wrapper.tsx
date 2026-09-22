@@ -20,15 +20,17 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  const sidebarWidth = isCollapsed ? 'w-[72px]' : 'w-60';
+
   return (
     <div className="flex min-h-screen w-full">
       {/* Sidebar */}
-      <div className={`transition-all duration-300 ${isCollapsed ? 'w-[72px]' : 'w-60'}`}>
-        <div className="fixed top-0 left-0 h-screen flex flex-col border-r bg-white">
+      <div className={`shrink-0 transition-all duration-300 ${sidebarWidth}`}>
+        <div className={`fixed top-0 left-0 h-screen flex flex-col border-r bg-white ${sidebarWidth} overflow-hidden transition-all duration-300`}>
           {/* Logo and Toggle */}
           <div className={`flex items-center justify-between p-4 border-b ${isCollapsed ? 'justify-center' : ''}`}>
             {!isCollapsed && (
-              <Link href="/buscador-youtube" className="flex items-center gap-2">
+              <Link href="/buscador-youtube" className="flex items-center gap-2 min-w-0 flex-1">
                 <Logo />
               </Link>
             )}

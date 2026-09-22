@@ -73,9 +73,10 @@ const searchYoutubeVideosFlow = ai.defineFlow(
             let searchTerm = input.keyword || '';
 
             // Translate keyword if a country other than Brazil is selected
-            if (input.country && input.country !== 'br' && searchTerm) {
+            const countryCode = input.country?.toLowerCase();
+            if (countryCode && countryCode !== 'br' && searchTerm) {
                  try {
-                    const countryInfo = countries.find(c => c.value === input.country);
+                    const countryInfo = countries.find(c => c.value === countryCode);
                     if (countryInfo) {
                         const translationResult = await translateKeyword({
                             text: searchTerm,

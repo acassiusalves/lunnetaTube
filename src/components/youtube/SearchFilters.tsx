@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 
 interface SearchFiltersProps {
   onSearch: (filters: SearchFilterValues) => void;
   isLoading?: boolean;
+  initialKeyword?: string;
 }
 
 export interface SearchFilterValues {
@@ -54,7 +55,7 @@ const orderOptions = [
   { value: 'rating', label: 'Avaliação' },
 ];
 
-export function SearchFilters({ onSearch, isLoading }: SearchFiltersProps) {
+export function SearchFilters({ onSearch, isLoading, initialKeyword }: SearchFiltersProps) {
   const [filters, setFilters] = useState<SearchFilterValues>({
     keyword: '',
     country: 'BR',
@@ -63,6 +64,12 @@ export function SearchFilters({ onSearch, isLoading }: SearchFiltersProps) {
     order: 'relevance',
     excludeShorts: false,
   });
+
+  useEffect(() => {
+    if (initialKeyword) {
+      setFilters((prev) => ({ ...prev, keyword: initialKeyword }));
+    }
+  }, [initialKeyword]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

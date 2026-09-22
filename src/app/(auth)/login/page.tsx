@@ -1,5 +1,6 @@
 
 import Link from "next/link";
+import { Suspense } from "react";
 
 import {
   Card,
@@ -25,7 +26,10 @@ export default function LoginPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <LoginForm />
+        {/* LoginForm usa useSearchParams, que exige Suspense no build */}
+        <Suspense>
+          <LoginForm />
+        </Suspense>
       </CardContent>
       <CardFooter className="flex justify-center text-sm">
         <p>

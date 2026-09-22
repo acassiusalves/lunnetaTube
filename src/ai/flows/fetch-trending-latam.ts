@@ -1,19 +1,22 @@
 'use server';
 
 /**
- * @fileOverview Orquestrador LATAM - Busca trending videos em múltiplos países simultaneamente
+ * @fileOverview Orquestrador multi-país - Busca trending videos em múltiplos países simultaneamente
  *
- * - fetchTrendingLatam - Busca vídeos trending em vários países LATAM
+ * - fetchTrendingLatam - Busca vídeos trending em vários países
  * - FetchTrendingLatamInput - Input type
  * - FetchTrendingLatamOutput - Output type
  */
 
 import { searchYoutubeVideos } from './youtube-search';
-import { getCountryByCode, API_THROTTLE_MS, type CountryLang } from '@/lib/latam-config';
+import { getCountryByCode } from '@/lib/countries';
+
+// Throttle entre chamadas de API (ms)
+const API_THROTTLE_MS = 150;
 
 export interface FetchTrendingLatamInput {
   apiKey: string;
-  countries: Array<{ code: string; lang: CountryLang }>;
+  countries: Array<{ code: string; lang: string }>;
   excludeShorts?: boolean;
   excludeMusic?: boolean;
   excludeGaming?: boolean;
@@ -38,7 +41,7 @@ export interface FetchTrendingLatamOutput {
 }
 
 /**
- * Busca vídeos trending em múltiplos países LATAM com throttling
+ * Busca vídeos trending em múltiplos países com throttling
  */
 export async function fetchTrendingLatam(
   params: FetchTrendingLatamInput

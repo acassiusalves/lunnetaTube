@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Search, Loader2 } from 'lucide-react';
+import { COUNTRIES } from '@/lib/countries';
 
 interface SearchFiltersProps {
   onSearch: (filters: SearchFilterValues) => void;
@@ -17,18 +18,6 @@ export interface SearchFilterValues {
   order: string;
   excludeShorts: boolean;
 }
-
-const countries = [
-  { code: 'BR', name: 'Brasil' },
-  { code: 'US', name: 'Estados Unidos' },
-  { code: 'GB', name: 'Reino Unido' },
-  { code: 'CA', name: 'Canadá' },
-  { code: 'AU', name: 'Austrália' },
-  { code: 'DE', name: 'Alemanha' },
-  { code: 'FR', name: 'França' },
-  { code: 'JP', name: 'Japão' },
-  { code: 'IN', name: 'Índia' },
-];
 
 const minViewsOptions = [
   { value: '', label: 'Todas as visualizações' },
@@ -115,9 +104,9 @@ export function SearchFilters({ onSearch, isLoading, initialKeyword }: SearchFil
               onChange={(e) => updateFilter('country', e.target.value)}
               className="w-full px-3 py-2 text-sm border border-[#f0f0f0] rounded-lg bg-white focus:outline-none focus:border-[#FF6B00] transition-colors"
             >
-              {countries.map((country) => (
-                <option key={country.code} value={country.code}>
-                  {country.name}
+              {COUNTRIES.map((country) => (
+                <option key={country.value} value={country.value}>
+                  {country.flag} {country.label}
                 </option>
               ))}
             </select>

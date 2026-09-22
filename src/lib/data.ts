@@ -1,16 +1,4 @@
 
-export const countries = [
-  { value: 'br', label: 'Brasil', language: 'Brazilian Portuguese' },
-  { value: 'us', label: 'Estados Unidos', language: 'English' },
-  { value: 'gb', label: 'Reino Unido', language: 'English' },
-  { value: 'ca', label: 'Canadá', language: 'English' },
-  { value: 'au', label: 'Austrália', language: 'English' },
-  { value: 'de', label: 'Alemanha', language: 'German' },
-  { value: 'fr', label: 'França', language: 'French' },
-  { value: 'jp', label: 'Japão', language: 'Japanese' },
-  { value: 'in', label: 'Índia', language: 'Hindi' },
-];
-
 export const categories = [
   { value: '1', label: 'Filmes e Animação' },
   { value: '2', label: 'Automóveis e Veículos' },
@@ -67,8 +55,8 @@ export interface Video {
   tags: string[];
   hasHighPotential?: boolean;
 
-  // Origem LATAM (para busca multi-país)
-  sourceCountry?: string;       // Código do país (BR, MX, AR...)
+  // Origem (para busca multi-país)
+  sourceCountry?: string;       // Código do país (BR, PT, US...)
   sourceCountryFlag?: string;   // Emoji da bandeira
 
   // Dados do canal

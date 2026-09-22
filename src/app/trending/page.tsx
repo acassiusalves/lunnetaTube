@@ -7,8 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { countries } from '@/lib/data';
-import { TRENDING_COUNTRIES, getLanguageByCountry } from '@/lib/latam-config';
+import { COUNTRIES, getCountryByCode, getLanguageByCountry } from '@/lib/countries';
 import { fetchTrendingLatam } from '@/ai/flows/fetch-trending-latam';
 import { MultiSelectCountries } from '@/components/ui/multi-select-countries';
 import { Loader2, Search, Terminal, Sparkles, Languages } from 'lucide-react';
@@ -363,7 +362,7 @@ export default function TrendingPage() {
           const newVideos = result.videos?.map((video: any) => ({
             ...mapApiToVideo(video),
             sourceCountry: selectedCountries[0],
-            sourceCountryFlag: TRENDING_COUNTRIES.find(c => c.value === selectedCountries[0])?.flag || '🌎',
+            sourceCountryFlag: getCountryByCode(selectedCountries[0])?.flag || '🌎',
           })) || [];
 
           setVideos(prev => isLoadMore ? [...prev, ...newVideos] : newVideos);
@@ -519,7 +518,7 @@ export default function TrendingPage() {
             <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="space-y-6">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="countries-latam">
+                  <Label htmlFor="countries">
                     Países
                     {isMultiCountry && (
                       <span className="ml-2 text-xs font-normal text-orange-600">
@@ -528,7 +527,7 @@ export default function TrendingPage() {
                     )}
                   </Label>
                   <MultiSelectCountries
-                    countries={TRENDING_COUNTRIES}
+                    countries={COUNTRIES}
                     selectedCountries={selectedCountries}
                     onSelectionChange={setSelectedCountries}
                     placeholder="Selecione 1 ou mais países..."

@@ -8,6 +8,7 @@ const publicRoutes = ['/login', '/signup'];
 const protectedRoutes = [
   '/buscador-youtube',
   '/trending',
+  '/shorts',
   '/sales-page',
   '/fb-library',
   '/admin',

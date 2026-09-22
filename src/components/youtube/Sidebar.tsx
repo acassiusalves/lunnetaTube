@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Home, TrendingUp, Facebook, Shield, Settings, FileText } from 'lucide-react';
+import { Home, TrendingUp, Facebook, Shield, Settings, FileText, Smartphone } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
 interface SidebarProps {
@@ -18,6 +18,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { icon: Home, label: 'Início', href: '/buscador-youtube' },
   { icon: TrendingUp, label: 'Tendências', href: '/trending' },
+  { icon: Smartphone, label: 'Shorts', href: '/shorts' },
   { icon: FileText, label: 'Página de Venda', href: '/sales-page' },
   { icon: Facebook, label: 'Biblioteca FB', href: '/fb-library' },
   { icon: Shield, label: 'Admin', href: '/admin' },

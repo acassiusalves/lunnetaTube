@@ -18,10 +18,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import type { TrendingCountry } from "@/lib/latam-config";
+import type { Country } from "@/lib/countries";
 
 interface MultiSelectCountriesProps {
-  countries: TrendingCountry[];
+  countries: Country[];
   selectedCountries: string[];
   onSelectionChange: (selected: string[]) => void;
   placeholder?: string;

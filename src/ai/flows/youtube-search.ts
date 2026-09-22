@@ -15,7 +15,7 @@ import { youtube } from 'googleapis/build/src/apis/youtube';
 import { analyzeVideoPotential } from './analyze-video-potential';
 import { translateKeyword } from './translate-keyword';
 import { fetchChannelStats } from './fetch-channel-stats';
-import { countries } from '@/lib/data';
+import { getCountryByCode, getLanguageName } from '@/lib/countries';
 
 
 const YoutubeSearchInputSchema = z.object({
@@ -23,7 +23,7 @@ const YoutubeSearchInputSchema = z.object({
   type: z.enum(['keyword', 'trending']).describe("The type of search to perform."),
   keyword: z.string().optional().describe("The keyword to search for."),
   country: z.string().optional().describe("The country code for the search (will be uppercased)."),
-  relevanceLanguage: z.enum(['pt', 'es', 'en']).optional().describe("Language for content relevance (pt/es/en)."),
+  relevanceLanguage: z.string().optional().describe("Language for content relevance / localized metadata (e.g. pt, es, en, pt-PT)."),
   minViews: z.number().optional().describe("The minimum number of views."),
   excludeShorts: z.boolean().optional().describe("Whether to exclude YouTube Shorts."),
   excludeMusic: z.boolean().optional().describe("Whether to exclude Music category (categoryId 10)."),
@@ -72,18 +72,15 @@ const searchYoutubeVideosFlow = ai.defineFlow(
             
             let searchTerm = input.keyword || '';
 
-            // Translate keyword if a country other than Brazil is selected
-            const countryCode = input.country?.toLowerCase();
-            if (countryCode && countryCode !== 'br' && searchTerm) {
+            // Translate keyword to the country's language (skip Portuguese-speaking countries)
+            const countryInfo = input.country ? getCountryByCode(input.country) : undefined;
+            if (countryInfo && !countryInfo.lang.startsWith('pt') && searchTerm) {
                  try {
-                    const countryInfo = countries.find(c => c.value === countryCode);
-                    if (countryInfo) {
-                        const translationResult = await translateKeyword({
-                            text: searchTerm,
-                            targetLanguage: countryInfo.language,
-                        });
-                        searchTerm = translationResult.translatedText;
-                    }
+                    const translationResult = await translateKeyword({
+                        text: searchTerm,
+                        targetLanguage: getLanguageName(countryInfo.lang),
+                    });
+                    searchTerm = translationResult.translatedText;
                 } catch (e) {
                     console.warn(`Keyword translation failed for country ${input.country}. Using original keyword.`, e);
                     // If translation fails, proceed with the original keyword

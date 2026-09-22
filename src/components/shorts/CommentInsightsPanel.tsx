@@ -101,6 +101,7 @@ export function CommentInsightsPanel({ analysis, titles, onOpenChange }: Comment
                   <li key={index} className="border-l-2 border-primary/40 pl-3">
                     <p className="italic">&ldquo;{item.quote}&rdquo;</p>
                     {item.translation && <p className="text-xs text-muted-foreground">{item.translation}</p>}
+                    {isConsolidated && <p className="text-xs text-muted-foreground">{titles[item.videoId] || item.videoId}</p>}
                   </li>
                 ))}
               </ul>

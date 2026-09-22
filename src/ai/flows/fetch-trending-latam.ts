@@ -9,11 +9,11 @@
  */
 
 import { searchYoutubeVideos } from './youtube-search';
-import { getLanguageByCountry, API_THROTTLE_MS } from '@/lib/latam-config';
+import { getCountryByCode, API_THROTTLE_MS, type CountryLang } from '@/lib/latam-config';
 
 export interface FetchTrendingLatamInput {
   apiKey: string;
-  countries: Array<{ code: string; lang: 'pt' | 'es' }>;
+  countries: Array<{ code: string; lang: CountryLang }>;
   excludeShorts?: boolean;
   excludeMusic?: boolean;
   excludeGaming?: boolean;
@@ -127,25 +127,9 @@ function sleep(ms: number): Promise<void> {
  * Helpers para metadados dos países
  */
 function getCountryName(code: string): string {
-  const names: Record<string, string> = {
-    BR: 'Brasil',
-    MX: 'México',
-    AR: 'Argentina',
-    CO: 'Colômbia',
-    CL: 'Chile',
-    PE: 'Peru',
-  };
-  return names[code.toUpperCase()] || code;
+  return getCountryByCode(code)?.label || code;
 }
 
 function getCountryFlag(code: string): string {
-  const flags: Record<string, string> = {
-    BR: '🇧🇷',
-    MX: '🇲🇽',
-    AR: '🇦🇷',
-    CO: '🇨🇴',
-    CL: '🇨🇱',
-    PE: '🇵🇪',
-  };
-  return flags[code.toUpperCase()] || '🌎';
+  return getCountryByCode(code)?.flag || '🌎';
 }

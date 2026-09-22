@@ -149,7 +149,6 @@ const generateMvpSpecFlow = ai.defineFlow(
         .replace('{{targetAudience}}', opportunity.targetAudience)
         .replace('{{marketSegment}}', opportunity.marketSegment)
         .replace('{{mvpFeatures}}', opportunity.mvpFeatures.join(', ')),
-      model: 'googleai/gemini-2.5-pro',
       output: {
         schema: GenerateMvpSpecOutputSchema,
         format: 'json',

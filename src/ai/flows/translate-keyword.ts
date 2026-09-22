@@ -9,7 +9,8 @@
  * - TranslateKeywordOutput - The return type for the translateKeyword function.
  */
 
-import { ai, FAST_MODEL } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
+import { FAST_MODEL } from '@/lib/ai-models';
 import { z } from 'genkit';
 
 const TranslateKeywordInputSchema = z.object({

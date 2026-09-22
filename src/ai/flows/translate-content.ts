@@ -5,7 +5,8 @@
  * @fileOverview A flow to translate video content (titles and comments) to Portuguese.
  */
 
-import { ai, FAST_MODEL } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
+import { FAST_MODEL } from '@/lib/ai-models';
 import { z } from 'genkit';
 
 const TranslateContentInputSchema = z.object({

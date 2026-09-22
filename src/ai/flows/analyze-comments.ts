@@ -10,6 +10,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import { resolveModel } from '@/lib/ai-models';
 import {z} from 'genkit';
 import { checkTrendGrowth } from './fetch-google-trends';
 
@@ -108,7 +109,7 @@ const analyzeCommentsFlow = ai.defineFlow(
     const [aiResult, trendResult] = await Promise.all([
       ai.generate({
         prompt: `${finalPrompt}\n\nComments:\n${comments}`,
-        model: model || 'googleai/gemini-2.5-pro',
+        model: resolveModel(model),
         output: {
             schema: AnalyzeCommentsOutputSchema.omit({ trendData: true }),
             format: 'json',

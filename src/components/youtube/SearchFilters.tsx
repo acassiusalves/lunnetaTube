@@ -180,7 +180,7 @@ export function SearchFilters({ onSearch, isLoading, initialKeyword }: SearchFil
             className="w-4 h-4 text-[#ff0000] border-gray-300 rounded focus:ring-[#ff0000]"
           />
           <label htmlFor="excludeShorts" className="text-sm text-[#0f0f0f] cursor-pointer">
-            Excluir Shorts
+            Excluir Shorts (até 3 min)
           </label>
         </div>
 

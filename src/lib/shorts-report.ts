@@ -73,7 +73,7 @@ export function formatReportMarkdown(report: ShortsCommentsReport, titles: Recor
 
   lines.push('', '## Linguagem do público');
   report.audienceLanguage.forEach(item => {
-    lines.push(`- "${item.quote}"${item.translation ? ` (${item.translation})` : ''}`);
+    lines.push(`- "${item.quote}"${item.translation ? ` (${item.translation})` : ''} (${sources([item.videoId])})`);
   });
 
   lines.push('', '## Ângulos de anúncio');

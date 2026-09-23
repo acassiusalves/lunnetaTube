@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Home, TrendingUp, Facebook, Shield, Settings, FileText, Smartphone } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -29,19 +30,23 @@ export function Sidebar({ isCollapsed }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <nav className="py-3">
+    // O rótulo do menu recolhido usa o Tooltip do Radix, que é renderizado fora da
+    // árvore (portal): um tooltip absoluto dentro da nav seria cortado pelo
+    // contêiner com overflow-y-auto que envolve o menu
+    <TooltipProvider delayDuration={0}>
+      <nav className="py-3">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href);
 
           const Icon = item.icon;
 
-          return (
+          const link = (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-6 px-4 py-3 hover:bg-[#FFE9D6] transition-colors relative group ${
-                isActive ? 'bg-[#FFE9D6]' : ''
-              }`}
+              className={`flex items-center px-4 py-3 hover:bg-[#FFE9D6] transition-colors relative ${
+                isCollapsed ? 'justify-center' : 'gap-6'
+              } ${isActive ? 'bg-[#FFE9D6]' : ''}`}
             >
               {isActive && (
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FF6B00]" />
@@ -61,16 +66,21 @@ export function Sidebar({ isCollapsed }: SidebarProps) {
               >
                 {item.label}
               </span>
-
-              {/* Tooltip when collapsed */}
-              {isCollapsed && (
-                <div className="absolute left-full ml-2 px-3 py-2 bg-[#FF6B00] text-white text-sm rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
-                  {item.label}
-                </div>
-              )}
             </Link>
+          );
+
+          if (!isCollapsed) return link;
+
+          return (
+            <Tooltip key={item.href}>
+              <TooltipTrigger asChild>{link}</TooltipTrigger>
+              <TooltipContent side="right" className="border-0 bg-[#FF6B00] px-3 py-2 text-white">
+                {item.label}
+              </TooltipContent>
+            </Tooltip>
           );
         })}
       </nav>
+    </TooltipProvider>
   );
 }

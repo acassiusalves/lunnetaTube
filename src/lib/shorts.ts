@@ -6,7 +6,7 @@
 import { parseDurationSeconds, SHORTS_MAX_SECONDS } from '@/lib/data';
 
 export type ShortsSearchOrder = 'viewCount' | 'date' | 'relevance';
-export type ShortsSortKey = 'viral' | 'velocity' | 'views' | 'engagement' | 'recent';
+export type ShortsSortKey = 'viral' | 'velocity' | 'views' | 'engagement' | 'comments' | 'recent';
 
 export interface ShortVideo {
   id: string;
@@ -69,6 +69,8 @@ function sortValue(short: ShortVideo, key: ShortsSortKey): number | null {
       return short.views;
     case 'engagement':
       return short.engagementRate;
+    case 'comments':
+      return short.comments;
     case 'recent':
       return Date.parse(short.publishedAt);
   }

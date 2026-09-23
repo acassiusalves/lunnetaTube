@@ -101,3 +101,12 @@ test('formatações em pt-BR', () => {
   assert.equal(formatTimeAgo('2026-09-21T10:00:00Z', NOW), 'há 1 dia');
   assert.equal(formatTimeAgo('2026-09-19T12:00:00Z', NOW), 'há 3 dias');
 });
+
+test('sortShorts: "comments" ordena por número de comentários', () => {
+  const list = [
+    makeShort('poucos', { comments: 3 }),
+    makeShort('muitos', { comments: 900 }),
+    makeShort('medio', { comments: 40 }),
+  ];
+  assert.deepEqual(sortShorts(list, 'comments').map(s => s.id), ['muitos', 'medio', 'poucos']);
+});

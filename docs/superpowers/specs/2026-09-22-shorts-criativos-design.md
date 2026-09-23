@@ -183,3 +183,13 @@ Pedidos do usuário depois do primeiro uso em produção.
 - Os termos do YouTube proíbem baixar vídeos fora dos recursos do próprio YouTube, e a API
   não entrega o arquivo. O card ganha um botão discreto **"Copiar link"**
   (`https://www.youtube.com/shorts/{id}`), ao lado de "Abrir no YouTube".
+
+### Largura da página e tamanho dos cards
+- A página ocupa toda a área ao lado do menu (sem o limite de 1.280px, que deixava
+  ~450px em branco numa tela de 1920px).
+- A grade usa colunas de no mínimo 260px (`repeat(auto-fill, minmax(min(260px, 100%), 1fr))`, sem passar da largura disponível): cerca
+  de 5 cards por linha em 1920px, 4 em 1440px e 3 em 1280px. Antes, 6 colunas de ~189px
+  cortavam o título, o canal e o ícone "Abrir no YouTube".
+- Card: título com até 3 linhas; canal e inscritos em linhas separadas; métricas em 3
+  colunas; "Ver comentários" na largura toda e, abaixo, "Copiar link" e "YouTube" com
+  texto, não só ícone.

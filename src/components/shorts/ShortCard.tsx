@@ -76,13 +76,14 @@ export function ShortCard({ short, selected, selectDisabled, loadingComments, on
             aria-label="Selecionar para análise consolidada"
             className="mt-0.5"
           />
-          <p className="line-clamp-2 text-sm font-medium leading-snug" title={short.title}>{short.title}</p>
+          <p className="line-clamp-3 text-sm font-medium leading-snug" title={short.title}>{short.title}</p>
         </div>
-        <p className="truncate text-xs text-muted-foreground">
-          {short.channelTitle} · {short.subscribers !== null ? `${formatCompactNumber(short.subscribers)} inscritos` : 'inscritos ocultos'}
-        </p>
+        <div className="text-xs text-muted-foreground">
+          <p className="truncate" title={short.channelTitle}>{short.channelTitle}</p>
+          <p>{short.subscribers !== null ? `${formatCompactNumber(short.subscribers)} inscritos` : 'inscritos ocultos'}</p>
+        </div>
 
-        <dl className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+        <dl className="grid grid-cols-3 gap-x-2 gap-y-1 text-xs">
           <div>
             <dt className="text-muted-foreground">Viralização</dt>
             <dd className={cn('font-semibold', isViral && 'text-orange-600')}>{formatViralScore(short.viralScore)}</dd>
@@ -106,19 +107,23 @@ export function ShortCard({ short, selected, selectDisabled, loadingComments, on
         </dl>
         <p className="text-xs text-muted-foreground">{formatTimeAgo(short.publishedAt)}</p>
 
-        <div className="mt-auto flex gap-1 pt-1">
-          <Button size="sm" variant="secondary" className="flex-1 px-2 text-xs" onClick={onOpenComments} disabled={loadingComments}>
+        <div className="mt-auto space-y-1 pt-1">
+          <Button size="sm" variant="secondary" className="w-full text-xs" onClick={onOpenComments} disabled={loadingComments}>
             {loadingComments ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <MessageSquareText className="mr-1 h-3 w-3" />}
             Ver comentários
           </Button>
-          <Button size="sm" variant="ghost" className="px-2" onClick={copyLink} aria-label="Copiar link" title="Copiar link">
-            <Link2 className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="ghost" className="px-2" asChild>
-            <a href={shortUrl} target="_blank" rel="noopener noreferrer" aria-label="Abrir no YouTube" title="Abrir no YouTube">
-              <ExternalLink className="h-4 w-4" />
-            </a>
-          </Button>
+          <div className="grid grid-cols-2 gap-1">
+            <Button size="sm" variant="ghost" className="text-xs" onClick={copyLink}>
+              <Link2 className="mr-1 h-3 w-3" />
+              Copiar link
+            </Button>
+            <Button size="sm" variant="ghost" className="text-xs" asChild>
+              <a href={shortUrl} target="_blank" rel="noopener noreferrer" aria-label="Abrir no YouTube">
+                <ExternalLink className="mr-1 h-3 w-3" />
+                YouTube
+              </a>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

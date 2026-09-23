@@ -213,7 +213,7 @@ export default function ShortsPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl space-y-6 pb-24">
+    <div className="w-full space-y-6 pb-24">
       <header>
         <h1 className="text-3xl font-bold tracking-tight">Shorts para Criativos</h1>
         <p className="text-muted-foreground">
@@ -322,7 +322,7 @@ export default function ShortsPage() {
       )}
 
       {shorts.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-6">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(260px,100%),1fr))] gap-4">
           {sortedShorts.map(short => (
             <ShortCard
               key={short.id}

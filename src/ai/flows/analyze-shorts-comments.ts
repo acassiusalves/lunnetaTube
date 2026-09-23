@@ -8,8 +8,9 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { fetchTopComments } from './fetch-comments';
+import { fetchTopComments, type FetchCommentsOutput } from './fetch-comments';
 import { buildCommentsPrompt, type ShortsCommentsReport, type VideoComments } from '@/lib/shorts-report';
+import { safeErrorSummary } from '@/lib/log-error';
 
 const ReportSchema = z.object({
   painsAndDesires: z.array(z.object({
@@ -33,7 +34,12 @@ const ReportSchema = z.object({
 
 const AnalyzeShortsCommentsInputSchema = z.object({
   apiKey: z.string().describe('The YouTube Data API v3 key.'),
-  videos: z.array(z.object({ id: z.string(), title: z.string() })).min(1).max(10),
+  videos: z.array(z.object({
+    id: z.string(),
+    title: z.string(),
+    // Comentários já exibidos na tela: a análise usa exatamente esses, sem buscar de novo
+    comments: z.array(z.object({ text: z.string(), likeCount: z.number().optional() })).optional(),
+  })).min(1).max(10),
 });
 export type AnalyzeShortsCommentsInput = z.infer<typeof AnalyzeShortsCommentsInputSchema>;
 
@@ -64,7 +70,9 @@ const analyzeShortsCommentsFlow = ai.defineFlow(
     // 100 comentários para um Short; 50 por Short na análise consolidada
     const perVideo = videos.length === 1 ? 100 : 50;
     const results = await Promise.all(
-      videos.map(video => fetchTopComments({ apiKey, videoId: video.id, maxResults: perVideo })),
+      videos.map(video => video.comments
+        ? Promise.resolve<FetchCommentsOutput>({ comments: video.comments })
+        : fetchTopComments({ apiKey, videoId: video.id, maxResults: perVideo })),
     );
 
     const withComments: VideoComments[] = [];
@@ -72,7 +80,7 @@ const analyzeShortsCommentsFlow = ai.defineFlow(
     videos.forEach((video, index) => {
       const comments = (results[index].comments || []) as { text: string; likeCount?: number }[];
       if (comments.length === 0) videosWithoutComments.push(video.id);
-      else withComments.push({ ...video, comments });
+      else withComments.push({ id: video.id, title: video.title, comments });
     });
 
     const commentsAnalyzed = withComments.reduce((sum, video) => sum + video.comments.length, 0);
@@ -95,7 +103,7 @@ const analyzeShortsCommentsFlow = ai.defineFlow(
       if (!output) throw new Error('resposta vazia');
       return { report: output, commentsAnalyzed, videosWithoutComments };
     } catch (e: any) {
-      console.error('[analyzeShortsComments] Erro no Gemini:', e);
+      console.error('[analyzeShortsComments] Erro no Gemini:', safeErrorSummary(e));
       return {
         commentsAnalyzed,
         videosWithoutComments,

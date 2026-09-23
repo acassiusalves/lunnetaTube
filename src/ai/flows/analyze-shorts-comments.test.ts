@@ -76,3 +76,14 @@ test('consolidada ignora o Short sem comentários', async () => {
   assert.equal(result.commentsAnalyzed, 1);
   assert.deepEqual(result.videosWithoutComments, ['b']);
 });
+
+test('usa os comentários recebidos, sem buscar de novo', async () => {
+  const result = await analyzeShortsComments({
+    apiKey: 'x',
+    videos: [{ id: 'a', title: 'A', comments: [{ text: 'Amei', likeCount: 2 }, { text: 'Onde compro?' }] }],
+  });
+
+  assert.equal(commentCalls.length, 0);
+  assert.equal(result.commentsAnalyzed, 2);
+  assert.match(result.error || '', /Gemini/);
+});

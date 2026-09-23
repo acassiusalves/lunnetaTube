@@ -1,8 +1,9 @@
 'use client';
 
-import { ExternalLink, Flame, Loader2, MessageSquareText, Play } from 'lucide-react';
+import { ExternalLink, Flame, Link2, Loader2, MessageSquareText, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { formatCompactNumber, formatTimeAgo, VIRAL_HIGHLIGHT, type ShortVideo } from '@/lib/shorts';
 
@@ -10,10 +11,10 @@ interface ShortCardProps {
   short: ShortVideo;
   selected: boolean;
   selectDisabled: boolean;
-  analyzing: boolean;
+  loadingComments: boolean;
   onToggleSelect: () => void;
   onPlay: () => void;
-  onAnalyze: () => void;
+  onOpenComments: () => void;
 }
 
 const decimalFormatter = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -28,8 +29,19 @@ function formatViralScore(score: number | null): string {
   return `${score < 10 ? decimalFormatter.format(score) : Math.round(score)}×`;
 }
 
-export function ShortCard({ short, selected, selectDisabled, analyzing, onToggleSelect, onPlay, onAnalyze }: ShortCardProps) {
+export function ShortCard({ short, selected, selectDisabled, loadingComments, onToggleSelect, onPlay, onOpenComments }: ShortCardProps) {
+  const { toast } = useToast();
   const isViral = short.viralScore !== null && short.viralScore >= VIRAL_HIGHLIGHT;
+  const shortUrl = `https://www.youtube.com/shorts/${short.id}`;
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shortUrl);
+      toast({ title: 'Link copiado' });
+    } catch {
+      toast({ title: 'Não foi possível copiar o link', variant: 'destructive' });
+    }
+  };
 
   return (
     <div className={cn('flex flex-col overflow-hidden rounded-lg border bg-card shadow-sm', selected && 'ring-2 ring-primary')}>
@@ -84,19 +96,26 @@ export function ShortCard({ short, selected, selectDisabled, analyzing, onToggle
             <dd className="font-semibold">{formatCompactNumber(short.views)}</dd>
           </div>
           <div>
+            <dt className="text-muted-foreground">Comentários</dt>
+            <dd className="font-semibold">{formatCompactNumber(short.comments)}</dd>
+          </div>
+          <div>
             <dt className="text-muted-foreground">Engajamento</dt>
             <dd className="font-semibold">{decimalFormatter.format(short.engagementRate)}%</dd>
           </div>
         </dl>
         <p className="text-xs text-muted-foreground">{formatTimeAgo(short.publishedAt)}</p>
 
-        <div className="mt-auto flex gap-2 pt-1">
-          <Button size="sm" variant="secondary" className="flex-1 px-2 text-xs" onClick={onAnalyze} disabled={analyzing}>
-            {analyzing ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <MessageSquareText className="mr-1 h-3 w-3" />}
-            Analisar comentários
+        <div className="mt-auto flex gap-1 pt-1">
+          <Button size="sm" variant="secondary" className="flex-1 px-2 text-xs" onClick={onOpenComments} disabled={loadingComments}>
+            {loadingComments ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <MessageSquareText className="mr-1 h-3 w-3" />}
+            Ver comentários
+          </Button>
+          <Button size="sm" variant="ghost" className="px-2" onClick={copyLink} aria-label="Copiar link" title="Copiar link">
+            <Link2 className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="ghost" className="px-2" asChild>
-            <a href={`https://www.youtube.com/shorts/${short.id}`} target="_blank" rel="noopener noreferrer" aria-label="Abrir no YouTube">
+            <a href={shortUrl} target="_blank" rel="noopener noreferrer" aria-label="Abrir no YouTube" title="Abrir no YouTube">
               <ExternalLink className="h-4 w-4" />
             </a>
           </Button>

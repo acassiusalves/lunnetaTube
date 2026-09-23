@@ -10,9 +10,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ShortCard } from '@/components/shorts/ShortCard';
 import { ShortPlayerDialog } from '@/components/shorts/ShortPlayerDialog';
-import { CommentInsightsPanel, type AnalysisState } from '@/components/shorts/CommentInsightsPanel';
+import {
+  ShortPanel, type AnalysisState, type CommentsState, type PanelTab, type TranscriptState,
+} from '@/components/shorts/ShortPanel';
 import { searchShorts, type SearchShortsInput } from '@/ai/flows/search-shorts';
 import { analyzeShortsComments } from '@/ai/flows/analyze-shorts-comments';
+import { fetchTopComments } from '@/ai/flows/fetch-comments';
+import { transcribeShort } from '@/ai/flows/transcribe-short';
 import { COUNTRIES } from '@/lib/countries';
 import { defaultSortFor, sortShorts, type ShortsSearchOrder, type ShortsSortKey, type ShortVideo } from '@/lib/shorts';
 import { analysisKey } from '@/lib/shorts-report';
@@ -38,6 +42,7 @@ const SORT_OPTIONS: { value: ShortsSortKey; label: string }[] = [
   { value: 'velocity', label: 'Velocidade (views/dia)' },
   { value: 'views', label: 'Views' },
   { value: 'engagement', label: 'Engajamento' },
+  { value: 'comments', label: 'Mais comentários' },
   { value: 'recent', label: 'Mais recentes' },
 ];
 
@@ -61,7 +66,10 @@ export default function ShortsPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [playing, setPlaying] = useState<ShortVideo | null>(null);
   const [analyses, setAnalyses] = useState<Record<string, AnalysisState>>({});
-  const [openAnalysisKey, setOpenAnalysisKey] = useState<string | null>(null);
+  const [comments, setComments] = useState<Record<string, CommentsState>>({});
+  const [transcripts, setTranscripts] = useState<Record<string, TranscriptState>>({});
+  // Painel lateral: um Short (abas) ou vários (análise consolidada)
+  const [panel, setPanel] = useState<{ videoIds: string[]; tab: PanelTab } | null>(null);
 
   const busy = isSearching || isLoadingMore;
 
@@ -117,8 +125,7 @@ export default function ShortsPage() {
 
   const analyze = async (videoIds: string[]) => {
     const key = analysisKey(videoIds);
-    setOpenAnalysisKey(key);
-    // Já analisado (ou em andamento): só reabre o painel. Em caso de erro, tenta de novo
+    // Já analisado (ou em andamento): o painel só mostra. Em caso de erro, tenta de novo
     const existing = analyses[key];
     if (existing && existing.status !== 'error') return;
 
@@ -128,11 +135,17 @@ export default function ShortsPage() {
       return;
     }
 
+    // Um Short: a análise usa exatamente os comentários exibidos no painel
+    const shown = videoIds.length === 1 ? comments[videoIds[0]] : undefined;
+    const shownComments = shown?.status === 'done'
+      ? shown.comments.map(({ text, likeCount }) => ({ text, likeCount }))
+      : undefined;
+
     setAnalyses(prev => ({ ...prev, [key]: { status: 'loading', videoIds } }));
     try {
       const result = await analyzeShortsComments({
         apiKey,
-        videos: videoIds.map(id => ({ id, title: titles[id] || '' })),
+        videos: videoIds.map(id => ({ id, title: titles[id] || '', comments: shownComments })),
       });
       setAnalyses(prev => ({
         ...prev,
@@ -144,6 +157,53 @@ export default function ShortsPage() {
       setAnalyses(prev => ({ ...prev, [key]: { status: 'error', videoIds, error: e.message || 'Erro ao analisar os comentários.' } }));
     }
   };
+
+  const openComments = async (id: string) => {
+    setPanel({ videoIds: [id], tab: 'comments' });
+    const existing = comments[id];
+    if (existing && existing.status !== 'error') return;
+
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      setComments(prev => ({ ...prev, [id]: { status: 'error', error: 'Chave de API do YouTube não encontrada. Adicione-a em Configurações.' } }));
+      return;
+    }
+
+    setComments(prev => ({ ...prev, [id]: { status: 'loading' } }));
+    try {
+      const result = await fetchTopComments({ apiKey, videoId: id, maxResults: 100 });
+      const list = (result.comments || []) as { author: string; text: string; likeCount?: number }[];
+      setComments(prev => ({
+        ...prev,
+        [id]: result.error && list.length === 0
+          ? { status: 'error', error: result.error }
+          : { status: 'done', comments: list.map(comment => ({ author: comment.author, text: comment.text, likeCount: comment.likeCount || 0 })) },
+      }));
+    } catch (e: any) {
+      setComments(prev => ({ ...prev, [id]: { status: 'error', error: e.message || 'Erro ao carregar os comentários.' } }));
+    }
+  };
+
+  const transcribe = async (id: string) => {
+    const existing = transcripts[id];
+    if (existing && existing.status !== 'error') return;
+
+    setTranscripts(prev => ({ ...prev, [id]: { status: 'loading' } }));
+    try {
+      const result = await transcribeShort({ videoId: id });
+      setTranscripts(prev => ({
+        ...prev,
+        [id]: result.transcript
+          ? { status: 'done', transcript: result.transcript }
+          : { status: 'error', error: result.error || 'Não foi possível transcrever o Short.' },
+      }));
+    } catch (e: any) {
+      setTranscripts(prev => ({ ...prev, [id]: { status: 'error', error: e.message || 'Erro ao transcrever o Short.' } }));
+    }
+  };
+
+  const panelIds = panel?.videoIds ?? null;
+  const singleId = panelIds && panelIds.length === 1 ? panelIds[0] : null;
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -269,10 +329,10 @@ export default function ShortsPage() {
               short={short}
               selected={selectedIds.includes(short.id)}
               selectDisabled={selectedIds.length >= MAX_SELECTED}
-              analyzing={analyses[analysisKey([short.id])]?.status === 'loading'}
+              loadingComments={comments[short.id]?.status === 'loading'}
               onToggleSelect={() => toggleSelect(short.id)}
               onPlay={() => setPlaying(short)}
-              onAnalyze={() => analyze([short.id])}
+              onOpenComments={() => openComments(short.id)}
             />
           ))}
         </div>
@@ -299,7 +359,11 @@ export default function ShortsPage() {
           <span className="text-sm">
             {selectedIds.length} selecionado(s){selectedIds.length >= MAX_SELECTED ? ' (máximo)' : ''}
           </span>
-          <Button size="sm" onClick={() => analyze(selectedIds)} disabled={selectedIds.length < 2}>
+          <Button
+            size="sm"
+            onClick={() => { setPanel({ videoIds: selectedIds, tab: 'analysis' }); analyze(selectedIds); }}
+            disabled={selectedIds.length < 2}
+          >
             <Sparkles className="mr-1 h-3 w-3" />
             Analisar selecionados
           </Button>
@@ -310,10 +374,21 @@ export default function ShortsPage() {
       )}
 
       <ShortPlayerDialog short={playing} onClose={() => setPlaying(null)} />
-      <CommentInsightsPanel
-        analysis={openAnalysisKey ? analyses[openAnalysisKey] ?? null : null}
+      <ShortPanel
+        videoIds={panelIds}
+        tab={panel?.tab ?? 'comments'}
         titles={titles}
-        onOpenChange={(open) => { if (!open) setOpenAnalysisKey(null); }}
+        comments={singleId ? comments[singleId] : undefined}
+        analysis={panelIds ? analyses[analysisKey(panelIds)] : undefined}
+        transcript={singleId ? transcripts[singleId] : undefined}
+        onTabChange={(tab) => setPanel(prev => prev && { ...prev, tab })}
+        onAnalyze={() => {
+          if (!panelIds) return;
+          setPanel(prev => prev && { ...prev, tab: 'analysis' });
+          analyze(panelIds);
+        }}
+        onTranscribe={() => { if (singleId) transcribe(singleId); }}
+        onOpenChange={(open) => { if (!open) setPanel(null); }}
       />
     </div>
   );

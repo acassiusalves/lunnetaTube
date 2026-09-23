@@ -12,6 +12,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { google, youtube_v3 } from 'googleapis';
 import { stripHtml } from 'string-strip-html';
+import { safeErrorSummary } from '@/lib/log-error';
 
 const FetchTranscriptInputSchema = z.object({
   apiKey: z.string().describe('The YouTube Data API v3 key.'),
@@ -101,7 +102,7 @@ const fetchTranscriptFlow = ai.defineFlow(
       return { transcript };
 
     } catch (e: any) {
-        console.error(e);
+        console.error(safeErrorSummary(e));
         const errorMessage = e.response?.data?.error?.message || e.message;
         if (errorMessage.includes('captionsNotAvailable')) {
             return { error: 'As legendas estão desativadas para este vídeo.' };

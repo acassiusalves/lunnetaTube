@@ -8,6 +8,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { youtube } from 'googleapis/build/src/apis/youtube';
 import type { ChannelStats } from '@/lib/data';
+import { safeErrorSummary } from '@/lib/log-error';
 
 const FetchChannelStatsInputSchema = z.object({
   channelIds: z.array(z.string()).describe("Array de IDs dos canais"),
@@ -76,7 +77,7 @@ const fetchChannelStatsFlow = ai.defineFlow(
 
       return { channelStats };
     } catch (e: any) {
-      console.error('Error fetching channel stats:', e);
+      console.error('Error fetching channel stats:', safeErrorSummary(e));
       const errorMessage = e.response?.data?.error?.message || e.message || "Erro ao buscar estatísticas dos canais.";
       return { channelStats: {}, error: errorMessage };
     }

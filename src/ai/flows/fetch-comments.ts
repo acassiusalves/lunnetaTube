@@ -11,6 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { youtube } from 'googleapis/build/src/apis/youtube';
+import { safeErrorSummary } from '@/lib/log-error';
 
 const FetchCommentsInputSchema = z.object({
   apiKey: z.string().describe("The YouTube Data API v3 key."),
@@ -103,7 +104,7 @@ const fetchTopCommentsFlow = ai.defineFlow(
       };
 
     } catch (e: any) {
-        console.error('[fetchTopComments] Erro:', e);
+        console.error('[fetchTopComments] Erro:', safeErrorSummary(e));
 
         // Tratamento específico para comentários desabilitados
         if (e.response?.data?.error?.errors) {

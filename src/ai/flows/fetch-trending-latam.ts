@@ -10,6 +10,7 @@
 
 import { searchYoutubeVideos } from './youtube-search';
 import { getCountryByCode } from '@/lib/countries';
+import { redactSecrets, safeErrorSummary } from '@/lib/log-error';
 
 // Throttle entre chamadas de API (ms)
 const API_THROTTLE_MS = 150;
@@ -71,7 +72,7 @@ export async function fetchTrendingLatam(
       });
 
       if (result.error) {
-        console.error(`[LATAM] Erro em ${code}:`, result.error);
+        console.error(`[LATAM] Erro em ${code}:`, redactSecrets(result.error));
         errors.push(`${code}: ${result.error}`);
         results.push({
           country: code,
@@ -100,7 +101,7 @@ export async function fetchTrendingLatam(
         await sleep(API_THROTTLE_MS);
       }
     } catch (e: any) {
-      console.error(`[LATAM] Exceção em ${code}:`, e);
+      console.error(`[LATAM] Exceção em ${code}:`, safeErrorSummary(e));
       errors.push(`${code}: ${e.message}`);
       results.push({
         country: code,

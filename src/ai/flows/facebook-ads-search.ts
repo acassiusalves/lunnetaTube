@@ -2,6 +2,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { safeErrorSummary } from '@/lib/log-error';
 
 const FacebookAdsSearchInputSchema = z.object({
   accessToken: z.string().describe('The Facebook Access Token.'),
@@ -109,7 +110,7 @@ const searchFacebookAdsFlow = ai.defineFlow(
 
       return { ads: data, nextCursor };
     } catch (e: any) {
-      console.error('Error in searchFacebookAdsFlow:', e);
+      console.error('Error in searchFacebookAdsFlow:', safeErrorSummary(e));
       return { error: `Erro na API do Facebook: ${e.message}` };
     }
   }

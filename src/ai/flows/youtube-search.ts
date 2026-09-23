@@ -17,6 +17,7 @@ import { translateKeyword } from './translate-keyword';
 import { fetchChannelStats } from './fetch-channel-stats';
 import { getCountryByCode, getLanguageName, getRelevanceLanguage } from '@/lib/countries';
 import { isShortDuration } from '@/lib/data';
+import { safeErrorSummary } from '@/lib/log-error';
 
 
 const YoutubeSearchInputSchema = z.object({
@@ -204,7 +205,7 @@ const searchYoutubeVideosFlow = ai.defineFlow(
                 }
             }
         } catch (channelError) {
-            console.warn("Failed to fetch channel stats, continuing without them.", channelError);
+            console.warn("Failed to fetch channel stats, continuing without them.", safeErrorSummary(channelError));
         }
 
         // AI-powered analysis for keyword search
@@ -240,7 +241,7 @@ const searchYoutubeVideosFlow = ai.defineFlow(
         };
 
     } catch (e: any) {
-        console.error(e);
+        console.error(safeErrorSummary(e));
         const errorMessage = e.response?.data?.error?.message || e.message || "An unknown error occurred with the YouTube API.";
         return { error: `Erro na API do YouTube: ${errorMessage}` };
     }

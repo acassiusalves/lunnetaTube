@@ -14,6 +14,7 @@ import { fetchChannelStats } from './fetch-channel-stats';
 import { getCountryByCode, getLanguageName, getRelevanceLanguage } from '@/lib/countries';
 import { parseDurationSeconds } from '@/lib/data';
 import { computeShortMetrics, isShortVideo, type ShortVideo } from '@/lib/shorts';
+import { safeErrorSummary } from '@/lib/log-error';
 
 // search.list não retorna nada sem q, e "#shorts" traz Shorts globais em inglês mesmo com
 // regionCode e relevanceLanguage (testado no APIs Explorer em 2026-09-22). Sem tema, usamos
@@ -151,7 +152,7 @@ const searchShortsFlow = ai.defineFlow(
 
       return { shorts, nextPageToken };
     } catch (e: any) {
-      console.error('[searchShorts] Erro:', e);
+      console.error('[searchShorts] Erro:', safeErrorSummary(e));
       const reasons: string[] = e.response?.data?.error?.errors?.map((err: any) => err.reason) || [];
       if (reasons.includes('quotaExceeded')) {
         return { error: 'Limite diário de buscas do YouTube atingido. Ele renova à meia-noite no horário do Pacífico (4h ou 5h em Brasília).' };

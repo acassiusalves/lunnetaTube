@@ -167,3 +167,19 @@ test('cota esgotada vira mensagem clara', async () => {
 
   assert.match(result.error || '', /Limite diário de buscas/);
 });
+
+test('o log de erro não expõe a chave da API', async (t) => {
+  const key = 'AIzaSyFAKE-key_123';
+  searchError = {
+    message: 'quota',
+    config: { url: `https://youtube.googleapis.com/youtube/v3/search?q=x&key=${key}`, params: { key } },
+    response: { data: { error: { message: 'quota', errors: [{ reason: 'quotaExceeded' }] } } },
+  };
+  const logged: unknown[] = [];
+  t.mock.method(console, 'error', (...args: unknown[]) => { logged.push(...args); });
+
+  await searchShorts(BASE);
+
+  assert.ok(logged.length > 0);
+  assert.ok(!JSON.stringify(logged).includes(key));
+});

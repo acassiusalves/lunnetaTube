@@ -12,6 +12,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { youtube } from 'googleapis/build/src/apis/youtube';
+import { safeErrorSummary } from '@/lib/log-error';
 
 const VideoCategorySchema = z.object({
   id: z.string().describe("The ID of the video category."),
@@ -62,7 +63,7 @@ const fetchVideoCategoriesFlow = ai.defineFlow(
       return { categories };
 
     } catch (e: any) {
-        console.error('Error fetching video categories:', e);
+        console.error('Error fetching video categories:', safeErrorSummary(e));
         const errorMessage = e.response?.data?.error?.message || e.message || "An unknown error occurred with the YouTube API.";
         return { error: `Erro na API do YouTube: ${errorMessage}` };
     }

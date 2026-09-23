@@ -147,3 +147,39 @@ Interface:
    inscritos ocultos.
 4. `tsc` e `next build`; conferência visual da página.
 5. Teste real do usuário após o deploy.
+
+## Atualização: comentários antes da análise, transcrição e link
+
+Pedidos do usuário depois do primeiro uso em produção.
+
+### Ver os comentários antes de analisar
+- O botão do card passa a ser **"Ver comentários"**. Ele abre o painel lateral com os
+  100 comentários mais relevantes (`fetchTopComments`, 1 unidade de cota, sem Gemini):
+  autor, texto e likes.
+- O painel de um Short tem três abas: **Comentários**, **Análise** e **Transcrição**.
+  Na aba Comentários, o botão **"Analisar com IA"** roda a análise sobre exatamente os
+  comentários exibidos: `analyzeShortsComments` aceita os comentários já carregados de
+  cada vídeo e, nesse caso, não os busca de novo.
+- Comentários desativados: o painel avisa e a análise não é oferecida.
+- "Analisar selecionados" (2 a 10 Shorts) continua indo direto para a análise, sem abas.
+- Comentários, análises e transcrições ficam em cache no estado da página.
+
+### Comentários no card e ordenação
+- O card mostra **"Comentários"** entre as métricas.
+- "Ordenar por" ganha **"Mais comentários"**. A API do YouTube não busca por número de
+  comentários, então a ordenação vale para os Shorts já carregados.
+
+### Transcrição
+- A API do YouTube não entrega legendas de vídeos de terceiros (`captions.download` exige
+  o OAuth do dono). O Gemini aceita o link público do YouTube como entrada de vídeo
+  (recurso em preview, sem custo; limite de 8 h de vídeo por dia no plano gratuito).
+- Aba **Transcrição** com o botão **"Transcrever"**: o fluxo `transcribeShort` envia
+  `https://www.youtube.com/watch?v={id}` (id validado: 11 caracteres `[A-Za-z0-9_-]`) ao
+  Gemini e recebe `{ language, segments: [{ start: 'm:ss', text }], onScreenText[] }`:
+  fala literal no idioma original, com tempos, e os textos escritos na tela.
+- Botão **"Copiar transcrição"** (texto/markdown).
+
+### Link em vez de download
+- Os termos do YouTube proíbem baixar vídeos fora dos recursos do próprio YouTube, e a API
+  não entrega o arquivo. O card ganha um botão discreto **"Copiar link"**
+  (`https://www.youtube.com/shorts/{id}`), ao lado de "Abrir no YouTube".

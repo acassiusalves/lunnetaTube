@@ -61,7 +61,7 @@ const transcribeShortFlow = ai.defineFlow(
     } catch (e: any) {
       console.error('[transcribeShort] Erro no Gemini:', safeErrorSummary(e));
       return {
-        error: `Não foi possível transcrever o Short com o Gemini (${e.message || 'erro desconhecido'}). Confira se a GEMINI_API_KEY está configurada.`,
+        error: `Não foi possível transcrever o Short com o Gemini (${e.message || 'erro desconhecido'}). O vídeo precisa ser público; confira também se a GEMINI_API_KEY está configurada.`,
       };
     }
   }

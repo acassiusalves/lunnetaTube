@@ -3,7 +3,7 @@
 /**
  * @fileOverview Análise dos comentários de 1 a 10 Shorts para criativos de anúncio.
  *
- * - analyzeShortsComments - Busca os comentários mais relevantes e gera o relatório no Gemini.
+ * - analyzeShortsComments - Usa os comentários já exibidos (ou busca os mais relevantes) e gera o relatório no Gemini.
  */
 
 import { ai } from '@/ai/genkit';
@@ -38,7 +38,7 @@ const AnalyzeShortsCommentsInputSchema = z.object({
     id: z.string(),
     title: z.string(),
     // Comentários já exibidos na tela: a análise usa exatamente esses, sem buscar de novo
-    comments: z.array(z.object({ text: z.string(), likeCount: z.number().optional() })).optional(),
+    comments: z.array(z.object({ text: z.string().max(10_000), likeCount: z.number().optional() })).max(100).optional(),
   })).min(1).max(10),
 });
 export type AnalyzeShortsCommentsInput = z.infer<typeof AnalyzeShortsCommentsInputSchema>;

@@ -82,6 +82,7 @@ function AnalysisContent({ analysis, titles, canAnalyze, onAnalyze }: AnalysisCo
             Analisar com IA
           </Button>
         )}
+        {!canAnalyze && <p>Carregue os comentários na aba Comentários para poder analisar.</p>}
       </div>
     );
   }

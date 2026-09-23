@@ -57,7 +57,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8">
+      <main className="min-w-0 flex-1 p-4 md:p-8">
         {children}
       </main>
     </div>

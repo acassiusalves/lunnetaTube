@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { countryFlag, countryName } from '@/lib/countries';
 import { formatCompactNumber, formatTimeAgo, VIRAL_HIGHLIGHT, type ShortVideo } from '@/lib/shorts';
 
 interface ShortCardProps {
@@ -79,7 +80,14 @@ export function ShortCard({ short, selected, selectDisabled, loadingComments, on
           <p className="line-clamp-3 text-sm font-medium leading-snug" title={short.title}>{short.title}</p>
         </div>
         <div className="text-xs text-muted-foreground">
-          <p className="truncate" title={short.channelTitle}>{short.channelTitle}</p>
+          <p className="truncate" title={short.channelTitle}>
+            {short.channelCountry && (
+              <span title={`Canal de ${countryName(short.channelCountry)}`} aria-label={`Canal de ${countryName(short.channelCountry)}`}>
+                {countryFlag(short.channelCountry)}{' '}
+              </span>
+            )}
+            {short.channelTitle}
+          </p>
           <p>{short.subscribers !== null ? `${formatCompactNumber(short.subscribers)} inscritos` : 'inscritos ocultos'}</p>
         </div>
 

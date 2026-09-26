@@ -33,6 +33,7 @@ export interface ChannelStats {
   viewCount: number;
   videoCount: number;
   avgViewsPerVideo: number;
+  country?: string; // país informado pelo canal (opcional no YouTube)
 }
 
 export interface Video {

@@ -21,6 +21,8 @@ export interface ShortVideo {
   likes: number | null;         // null quando o vídeo oculta os likes
   comments: number;
   country: string;              // código ISO do país da busca
+  channelCountry: string | null; // país informado pelo canal (opcional no YouTube)
+  audioLanguage: string | null;  // idioma do áudio marcado pelo criador (ex.: pt-PT)
   viralScore: number | null;    // views ÷ inscritos
   viewsPerDay: number;
   engagementRate: number;       // (likes + comentários) ÷ views, em %
@@ -74,6 +76,20 @@ function sortValue(short: ShortVideo, key: ShortsSortKey): number | null {
     case 'recent':
       return Date.parse(short.publishedAt);
   }
+}
+
+// Região do idioma do áudio (pt-PT -> PT); idiomas sem região (pt, es-419) não contam
+function audioRegion(language: string | null): string | null {
+  const match = language?.match(/^[a-z]{2,3}[-_]([A-Za-z]{2})$/);
+  return match ? match[1].toUpperCase() : null;
+}
+
+// O YouTube não informa o país de origem do vídeo. Vale o país do canal; se o canal
+// não informou, vale a região do idioma do áudio
+export function isFromCountry(short: ShortVideo, country: string): boolean {
+  const target = country.toUpperCase();
+  if (short.channelCountry) return short.channelCountry.toUpperCase() === target;
+  return audioRegion(short.audioLanguage) === target;
 }
 
 // Ordem decrescente; valores nulos (ex.: inscritos ocultos) ficam por último

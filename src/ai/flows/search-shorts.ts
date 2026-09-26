@@ -125,8 +125,9 @@ const searchShortsFlow = ai.defineFlow(
       const { channelStats } = await fetchChannelStats({ channelIds, apiKey: input.apiKey });
 
       const shorts: ShortVideo[] = verticalShorts.map(video => {
+        const channel = channelStats[video.snippet?.channelId || ''];
         // fetchChannelStats devolve 0 quando o canal oculta os inscritos
-        const subscriberCount = channelStats[video.snippet?.channelId || '']?.subscriberCount;
+        const subscriberCount = channel?.subscriberCount;
         const base = {
           views: parseInt(video.statistics?.viewCount || '0', 10),
           likes: video.statistics?.likeCount != null ? parseInt(video.statistics.likeCount, 10) : null,
@@ -145,6 +146,8 @@ const searchShortsFlow = ai.defineFlow(
             || '',
           durationSeconds: parseDurationSeconds(video.contentDetails?.duration),
           country,
+          channelCountry: channel?.country ? String(channel.country).toUpperCase() : null,
+          audioLanguage: video.snippet?.defaultAudioLanguage || null,
           ...base,
           ...computeShortMetrics(base),
         };

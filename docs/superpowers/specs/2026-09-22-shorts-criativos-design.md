@@ -193,3 +193,17 @@ Pedidos do usuário depois do primeiro uso em produção.
 - Card: título com até 3 linhas; canal e inscritos em linhas separadas; métricas em 3
   colunas; "Ver comentários" na largura toda e, abaixo, "Copiar link" e "YouTube" com
   texto, não só ícone.
+
+### País do canal
+- A API do YouTube não informa o país de origem de um vídeo: `regionCode` só garante que ele
+  pode ser assistido no país, e `relevanceLanguage` não distingue pt-PT de pt-BR. Numa busca
+  com Portugal, a maioria dos resultados tende a ser brasileira.
+- `fetchChannelStats` passa a pedir também `part=snippet` (mesmo custo de cota) e devolve
+  `country`, o país informado pelo canal (campo opcional no YouTube). A busca de Shorts
+  também guarda `snippet.defaultAudioLanguage` do vídeo.
+- `ShortVideo` ganha `channelCountry` e `audioLanguage`. O card mostra a bandeira do canal
+  antes do nome, quando o canal informa o país.
+- Filtro **"Só canais de {país da busca}"**, aplicado na tela aos Shorts já carregados (sem
+  gastar cota). Regra (`isFromCountry`): vale o país do canal; se o canal não informou,
+  vale a região do idioma do áudio (`pt-PT` conta como Portugal; `pt` e `es-419` não
+  contam). Shorts sem nenhuma das duas informações ficam de fora.

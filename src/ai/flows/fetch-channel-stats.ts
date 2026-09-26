@@ -53,7 +53,8 @@ const fetchChannelStatsFlow = ai.defineFlow(
         const batch = uniqueChannelIds.slice(i, i + 50);
 
         const response = await youtubeApi.channels.list({
-          part: ['statistics'],
+          // snippet traz o país do canal; o custo da chamada é o mesmo (1 unidade)
+          part: ['statistics', 'snippet'],
           id: batch,
         });
 
@@ -69,6 +70,7 @@ const fetchChannelStatsFlow = ai.defineFlow(
                 viewCount: viewCount,
                 videoCount: videoCount,
                 avgViewsPerVideo: videoCount > 0 ? viewCount / videoCount : 0,
+                country: channel.snippet?.country || undefined,
               };
             }
           }

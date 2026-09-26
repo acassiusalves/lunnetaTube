@@ -5,12 +5,13 @@ import assert from 'node:assert/strict';
 delete process.env.GEMINI_API_KEY;
 delete process.env.GOOGLE_API_KEY;
 
-type VideoFixture = { duration: string; width?: number; height?: number; channelId: string; views: string };
+type VideoFixture = { duration: string; width?: number; height?: number; channelId: string; views: string; audio?: string };
 
 const calls: { method: string; params: any }[] = [];
 let searchIds: string[] = [];
 let videoFixtures: Record<string, VideoFixture> = {};
 let subscriberFixtures: Record<string, string> = {};
+let channelCountryFixtures: Record<string, string> = {};
 let searchError: unknown = null;
 
 // YouTube Data API simulada (substitui o módulo do googleapis antes de carregar o fluxo)
@@ -37,6 +38,7 @@ const fakeYoutubeModule = {
                   channelId: fixture.channelId,
                   channelTitle: 'Canal',
                   publishedAt: '2026-09-21T12:00:00Z',
+                  defaultAudioLanguage: fixture.audio,
                   thumbnails: { high: { url: `https://i.ytimg.com/vi/${id}/hqdefault.jpg` } },
                 },
                 contentDetails: { duration: fixture.duration },
@@ -55,6 +57,7 @@ const fakeYoutubeModule = {
           data: {
             items: params.id.map((id: string) => ({
               id,
+              snippet: { country: channelCountryFixtures[id] },
               statistics: { subscriberCount: subscriberFixtures[id] ?? '0', viewCount: '0', videoCount: '0' },
             })),
           },
@@ -86,6 +89,7 @@ beforeEach(() => {
   searchIds = [];
   videoFixtures = {};
   subscriberFixtures = {};
+  channelCountryFixtures = {};
   searchError = null;
 });
 
@@ -182,4 +186,25 @@ test('o log de erro não expõe a chave da API', async (t) => {
 
   assert.ok(logged.length > 0);
   assert.ok(!JSON.stringify(logged).includes(key));
+});
+
+test('traz o país do canal e o idioma do áudio sem chamada extra', async () => {
+  searchIds = ['pt', 'semPais'];
+  videoFixtures = {
+    pt: { duration: 'PT30S', width: 360, height: 640, channelId: 'c1', views: '1000', audio: 'pt-PT' },
+    semPais: { duration: 'PT30S', width: 360, height: 640, channelId: 'c2', views: '1000' },
+  };
+  subscriberFixtures = { c1: '100', c2: '100' };
+  channelCountryFixtures = { c1: 'PT' };
+
+  const result = await searchShorts({ ...BASE, country: 'PT' });
+  const byId = Object.fromEntries((result.shorts || []).map(s => [s.id, s]));
+
+  assert.equal(byId.pt.channelCountry, 'PT');
+  assert.equal(byId.pt.audioLanguage, 'pt-PT');
+  assert.equal(byId.semPais.channelCountry, null);
+  assert.equal(byId.semPais.audioLanguage, null);
+  const channelCalls = calls.filter(c => c.method === 'channels');
+  assert.equal(channelCalls.length, 1);
+  assert.deepEqual(channelCalls[0].params.part, ['statistics', 'snippet']);
 });

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AlertCircle, Loader2, Search, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,8 +18,8 @@ import { searchShorts, type SearchShortsInput } from '@/ai/flows/search-shorts';
 import { analyzeShortsComments } from '@/ai/flows/analyze-shorts-comments';
 import { fetchTopComments } from '@/ai/flows/fetch-comments';
 import { transcribeShort } from '@/ai/flows/transcribe-short';
-import { COUNTRIES } from '@/lib/countries';
-import { defaultSortFor, sortShorts, type ShortsSearchOrder, type ShortsSortKey, type ShortVideo } from '@/lib/shorts';
+import { COUNTRIES, countryName } from '@/lib/countries';
+import { defaultSortFor, isFromCountry, sortShorts, type ShortsSearchOrder, type ShortsSortKey, type ShortVideo } from '@/lib/shorts';
 import { analysisKey } from '@/lib/shorts-report';
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
@@ -74,6 +75,14 @@ export default function ShortsPage() {
   const busy = isSearching || isLoadingMore;
 
   const sortedShorts = useMemo(() => sortShorts(shorts, sortKey), [shorts, sortKey]);
+  // "Só canais do país": filtra na tela os Shorts já carregados (sem gastar cota)
+  const [onlyFromCountry, setOnlyFromCountry] = useState(false);
+  const searchCountry = lastQuery?.country;
+  const searchCountryName = searchCountry ? countryName(searchCountry) : '';
+  const visibleShorts = useMemo(
+    () => (onlyFromCountry && searchCountry ? sortedShorts.filter(short => isFromCountry(short, searchCountry)) : sortedShorts),
+    [sortedShorts, onlyFromCountry, searchCountry],
+  );
   const titles = useMemo(() => Object.fromEntries(shorts.map(short => [short.id, short.title])), [shorts]);
 
   const getApiKey = () => localStorage.getItem(API_KEY_STORAGE_ITEM);
@@ -306,7 +315,22 @@ export default function ShortsPage() {
 
       {shorts.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">{shorts.length} Shorts encontrados</p>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <p className="text-sm text-muted-foreground">
+              {onlyFromCountry ? `${visibleShorts.length} de ${shorts.length} Shorts` : `${shorts.length} Shorts encontrados`}
+            </p>
+            <div
+              className="flex items-center gap-2"
+              title="Usa o país informado pelo canal ou, se faltar, o idioma do áudio. Canais sem essa informação ficam de fora."
+            >
+              <Checkbox
+                id="shorts-only-country"
+                checked={onlyFromCountry}
+                onCheckedChange={(checked) => setOnlyFromCountry(checked === true)}
+              />
+              <Label htmlFor="shorts-only-country" className="text-sm font-normal">Só canais de {searchCountryName}</Label>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <Label htmlFor="shorts-sort" className="text-sm">Ordenar por</Label>
             <Select value={sortKey} onValueChange={(value) => setSortKey(value as ShortsSortKey)}>
@@ -321,9 +345,15 @@ export default function ShortsPage() {
         </div>
       )}
 
-      {shorts.length > 0 && (
+      {onlyFromCountry && shorts.length > 0 && visibleShorts.length === 0 && (
+        <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
+          Nenhum dos Shorts carregados é de um canal de {searchCountryName}. Carregue mais resultados ou desmarque o filtro.
+        </div>
+      )}
+
+      {visibleShorts.length > 0 && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(min(260px,100%),1fr))] gap-4">
-          {sortedShorts.map(short => (
+          {visibleShorts.map(short => (
             <ShortCard
               key={short.id}
               short={short}

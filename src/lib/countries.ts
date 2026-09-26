@@ -207,6 +207,15 @@ const RELEVANCE_LANGUAGE_OVERRIDES: Record<string, string> = {
 };
 
 // Idioma do país no formato do parâmetro relevanceLanguage do search.list
+// Bandeira e nome de qualquer país, inclusive os que não estão na lista de busca
+export function countryFlag(code: string): string {
+  return /^[A-Za-z]{2}$/.test(code) ? flagEmoji(code.toUpperCase()) : '';
+}
+
+export function countryName(code: string): string {
+  return getCountryByCode(code)?.label || code.toUpperCase();
+}
+
 export function getRelevanceLanguage(code: string): string | undefined {
   const lang = getCountryByCode(code)?.lang;
   if (!lang) return undefined;

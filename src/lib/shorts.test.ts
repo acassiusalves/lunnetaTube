@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   computeShortMetrics,
   defaultSortFor,
+  isFromCountry,
   formatCompactNumber,
   formatTimeAgo,
   isShortVideo,
@@ -26,6 +27,8 @@ function makeShort(id: string, overrides: Partial<ShortVideo>): ShortVideo {
     likes: 0,
     comments: 0,
     country: 'BR',
+    channelCountry: null,
+    audioLanguage: null,
     viralScore: null,
     viewsPerDay: 0,
     engagementRate: 0,
@@ -109,4 +112,15 @@ test('sortShorts: "comments" ordena por número de comentários', () => {
     makeShort('medio', { comments: 40 }),
   ];
   assert.deepEqual(sortShorts(list, 'comments').map(s => s.id), ['muitos', 'medio', 'poucos']);
+});
+
+test('isFromCountry: país do canal tem prioridade; sem ele, vale a região do áudio', () => {
+  assert.equal(isFromCountry(makeShort('a', { channelCountry: 'PT' }), 'PT'), true);
+  assert.equal(isFromCountry(makeShort('b', { channelCountry: 'BR', audioLanguage: 'pt-PT' }), 'PT'), false);
+  assert.equal(isFromCountry(makeShort('c', { audioLanguage: 'pt-PT' }), 'PT'), true);
+  assert.equal(isFromCountry(makeShort('d', { audioLanguage: 'pt-BR' }), 'PT'), false);
+  assert.equal(isFromCountry(makeShort('e', { audioLanguage: 'pt' }), 'PT'), false);
+  assert.equal(isFromCountry(makeShort('f', { audioLanguage: 'es-419' }), 'MX'), false);
+  assert.equal(isFromCountry(makeShort('g', { channelCountry: 'pt' }), 'PT'), true);
+  assert.equal(isFromCountry(makeShort('h', {}), 'PT'), false);
 });

@@ -208,3 +208,17 @@ test('traz o país do canal e o idioma do áudio sem chamada extra', async () =>
   assert.equal(channelCalls.length, 1);
   assert.deepEqual(channelCalls[0].params.part, ['statistics', 'snippet']);
 });
+
+test('"só vídeos marcados no país" envia location e locationRadius do país', async () => {
+  await searchShorts({ ...BASE, country: 'PT', onlyGeotagged: true });
+  const withGeo = calls.find(c => c.method === 'search')!.params;
+  assert.equal(withGeo.location, '39.4,-8.22');
+  assert.equal(withGeo.locationRadius, '350km');
+  assert.equal(withGeo.regionCode, 'PT');
+
+  calls.length = 0;
+  await searchShorts({ ...BASE, country: 'PT' });
+  const withoutGeo = calls.find(c => c.method === 'search')!.params;
+  assert.equal(withoutGeo.location, undefined);
+  assert.equal(withoutGeo.locationRadius, undefined);
+});

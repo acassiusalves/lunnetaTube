@@ -12,6 +12,7 @@ import { youtube } from 'googleapis/build/src/apis/youtube';
 import { translateKeyword } from './translate-keyword';
 import { fetchChannelStats } from './fetch-channel-stats';
 import { getCountryByCode, getLanguageName, getRelevanceLanguage } from '@/lib/countries';
+import { getLocationFilter } from '@/lib/country-geo';
 import { parseDurationSeconds } from '@/lib/data';
 import { computeShortMetrics, isShortVideo, type ShortVideo } from '@/lib/shorts';
 import { safeErrorSummary } from '@/lib/log-error';
@@ -43,6 +44,8 @@ const SearchShortsInputSchema = z.object({
   order: z.enum(['viewCount', 'date', 'relevance']),
   publishedAfter: z.string().describe('RFC 3339 - início do período.'),
   pageToken: z.string().optional(),
+  // Só vídeos com localização marcada dentro do país (location + locationRadius)
+  onlyGeotagged: z.boolean().optional(),
 });
 export type SearchShortsInput = z.infer<typeof SearchShortsInputSchema>;
 
@@ -93,6 +96,8 @@ const searchShortsFlow = ai.defineFlow(
         order: input.order,
         maxResults: 50,
         pageToken: input.pageToken,
+        // regionCode não restringe a origem do vídeo; a localização marcada pelo criador sim
+        ...(input.onlyGeotagged ? getLocationFilter(country) : {}),
       });
 
       const nextPageToken = searchResponse.data.nextPageToken || undefined;

@@ -54,6 +54,7 @@ export default function ShortsPage() {
   const [country, setCountry] = useState('BR');
   const [order, setOrder] = useState<ShortsSearchOrder>('viewCount');
   const [period, setPeriod] = useState('7');
+  const [onlyGeotagged, setOnlyGeotagged] = useState(false);
 
   const [shorts, setShorts] = useState<ShortVideo[]>([]);
   const [lastQuery, setLastQuery] = useState<SearchQuery | null>(null);
@@ -98,6 +99,7 @@ export default function ShortsPage() {
       country,
       order,
       topic: topic.trim() || undefined,
+      onlyGeotagged: onlyGeotagged || undefined,
       publishedAfter: new Date(Date.now() - Number(period) * 24 * 60 * 60 * 1000).toISOString(),
     };
 
@@ -285,6 +287,22 @@ export default function ShortsPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="shorts-geotagged"
+                checked={onlyGeotagged}
+                onCheckedChange={(checked) => setOnlyGeotagged(checked === true)}
+                className="mt-0.5"
+              />
+              <div className="space-y-0.5">
+                <Label htmlFor="shorts-geotagged" className="font-normal">Só vídeos marcados em {countryName(country)}</Label>
+                <p className="text-xs text-muted-foreground">
+                  Busca só vídeos com a localização marcada dentro do país. Traz conteúdo realmente local, mas bem menos
+                  resultados: combine com um período maior, como 90 dias.
+                </p>
               </div>
             </div>
 

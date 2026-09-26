@@ -207,3 +207,23 @@ Pedidos do usuário depois do primeiro uso em produção.
   gastar cota). Regra (`isFromCountry`): vale o país do canal; se o canal não informou,
   vale a região do idioma do áudio (`pt-PT` conta como Portugal; `pt` e `es-419` não
   contam). Shorts sem nenhuma das duas informações ficam de fora.
+
+## Atualização: só vídeos marcados no país
+
+Teste no APIs Explorer em 2026-09-25: `regionCode=PT` só garante que o vídeo pode ser
+assistido em Portugal, e `relevanceLanguage=pt-PT` é ignorado (a API usa só o código de
+2 letras). A busca "alfabetização" em Portugal trazia canais brasileiros. Com
+`location` + `locationRadius` (centro de Portugal, 350 km), a busca trouxe conteúdo
+português.
+
+- Nova opção no formulário: **"Só vídeos marcados em {país}"**, desligada por padrão.
+- Ligada, `searchShorts` envia `location` (centro do país) e `locationRadius` junto com
+  `regionCode`. O custo continua 1 busca. "Carregar mais" repete a opção.
+- Centros e raios em `src/lib/country-geo.ts`, para os 109 países de `COUNTRIES`.
+  Centros: tabela pública do Google (`developers.google.com/public-data/docs/canonical/countries_csv`).
+  O raio máximo da API é 1.000 km: países grandes (Brasil, EUA, Rússia...) e ilhas
+  distantes (Açores, Madeira, Canárias...) ficam cobertos só em parte.
+- Só aparecem vídeos em que o criador marcou uma localização, então vêm bem menos
+  resultados. O texto de ajuda sugere o período de 90 dias.
+- Pode ser combinada com o filtro "Só canais de {país}", que age nos resultados já
+  carregados.

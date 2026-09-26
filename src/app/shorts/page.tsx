@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AlertCircle, Loader2, Search, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ShortCard } from '@/components/shorts/ShortCard';
 import { ShortPlayerDialog } from '@/components/shorts/ShortPlayerDialog';
+import { TrendingTerms } from '@/components/shorts/TrendingTerms';
 import {
   ShortPanel, type AnalysisState, type CommentsState, type PanelTab, type TranscriptState,
 } from '@/components/shorts/ShortPanel';
@@ -18,9 +19,11 @@ import { searchShorts, type SearchShortsInput } from '@/ai/flows/search-shorts';
 import { analyzeShortsComments } from '@/ai/flows/analyze-shorts-comments';
 import { fetchTopComments } from '@/ai/flows/fetch-comments';
 import { transcribeShort } from '@/ai/flows/transcribe-short';
-import { COUNTRIES, countryName } from '@/lib/countries';
+import { translateContent } from '@/ai/flows/translate-content';
+import { COUNTRIES, countryName, getCountryByCode } from '@/lib/countries';
 import { defaultSortFor, isFromCountry, sortShorts, type ShortsSearchOrder, type ShortsSortKey, type ShortVideo } from '@/lib/shorts';
 import { analysisKey } from '@/lib/shorts-report';
+import { queryTerms, topTerms } from '@/lib/shorts-terms';
 
 const API_KEY_STORAGE_ITEM = 'youtube_api_key';
 const MAX_SELECTED = 10;
@@ -36,6 +39,26 @@ const PERIOD_OPTIONS = [
   { value: '7', label: 'Últimos 7 dias' },
   { value: '30', label: 'Últimos 30 dias' },
   { value: '90', label: 'Últimos 90 dias' },
+];
+
+// IDs das categorias do YouTube (iguais em todos os países). Quem escolhe é o criador do vídeo
+const CATEGORY_OPTIONS = [
+  { value: 'all', label: 'Todas as categorias' },
+  { value: '15', label: 'Animais' },
+  { value: '2', label: 'Autos e veículos' },
+  { value: '28', label: 'Ciência e tecnologia' },
+  { value: '23', label: 'Comédia' },
+  { value: '27', label: 'Educação' },
+  { value: '24', label: 'Entretenimento' },
+  { value: '17', label: 'Esportes' },
+  { value: '1', label: 'Filmes e animação' },
+  { value: '26', label: 'Guias e estilo (dicas, beleza, receitas)' },
+  { value: '20', label: 'Jogos' },
+  { value: '10', label: 'Música' },
+  { value: '25', label: 'Notícias e política' },
+  { value: '29', label: 'ONGs e ativismo' },
+  { value: '22', label: 'Pessoas e blogs' },
+  { value: '19', label: 'Viagens e eventos' },
 ];
 
 const SORT_OPTIONS: { value: ShortsSortKey; label: string }[] = [
@@ -55,6 +78,9 @@ export default function ShortsPage() {
   const [order, setOrder] = useState<ShortsSearchOrder>('viewCount');
   const [period, setPeriod] = useState('7');
   const [onlyGeotagged, setOnlyGeotagged] = useState(false);
+  const [category, setCategory] = useState('all');
+  // O tema veio de um termo em alta: já está no idioma do país e não é traduzido de novo
+  const [topicIsLocal, setTopicIsLocal] = useState(false);
 
   const [shorts, setShorts] = useState<ShortVideo[]>([]);
   const [lastQuery, setLastQuery] = useState<SearchQuery | null>(null);
@@ -64,6 +90,12 @@ export default function ShortsPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [missingKey, setMissingKey] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // q que o servidor enviou ao YouTube: seus termos não entram nos termos em alta
+  const [usedQuery, setUsedQuery] = useState<string | null>(null);
+  const [discardedOutsideCountry, setDiscardedOutsideCountry] = useState(0);
+  // Tradução dos termos em alta, pela chave "idioma:termo"
+  const [termTranslations, setTermTranslations] = useState<Record<string, string>>({});
+  const requestedTranslations = useRef(new Set<string>());
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [playing, setPlaying] = useState<ShortVideo | null>(null);
@@ -86,22 +118,62 @@ export default function ShortsPage() {
   );
   const titles = useMemo(() => Object.fromEntries(shorts.map(short => [short.id, short.title])), [shorts]);
 
+  // Termos em alta dos Shorts na tela, sem os termos que a própria busca usou
+  const trendingTerms = useMemo(
+    () => topTerms(visibleShorts, { exclude: usedQuery ? queryTerms(usedQuery) : [] }),
+    [visibleShorts, usedQuery],
+  );
+  const searchLanguage = searchCountry ? getCountryByCode(searchCountry)?.lang : undefined;
+  const trendingTranslations = useMemo(() => Object.fromEntries(
+    trendingTerms.flatMap(({ term }) => {
+      const translation = termTranslations[`${searchLanguage}:${term}`];
+      return translation ? [[term, translation]] : [];
+    }),
+  ), [trendingTerms, termTranslations, searchLanguage]);
+
+  useEffect(() => {
+    // Em países de língua portuguesa os termos não precisam de tradução
+    if (!searchLanguage || searchLanguage.startsWith('pt')) return;
+    const missing = trendingTerms
+      .map(({ term }) => term)
+      .filter(term => !requestedTranslations.current.has(`${searchLanguage}:${term}`));
+    if (missing.length === 0) return;
+    missing.forEach(term => requestedTranslations.current.add(`${searchLanguage}:${term}`));
+
+    translateContent({ texts: missing.map((text, index) => ({ id: String(index), text })), targetLanguage: 'Brazilian Portuguese' })
+      .then(({ translations }) => {
+        setTermTranslations(prev => {
+          const next = { ...prev };
+          for (const { id, translatedText } of translations) {
+            const term = missing[Number(id)];
+            if (term && translatedText) next[`${searchLanguage}:${term}`] = translatedText;
+          }
+          return next;
+        });
+      })
+      .catch(() => { /* sem tradução, os termos aparecem só no idioma original */ });
+  }, [trendingTerms, searchLanguage]);
+
   const getApiKey = () => localStorage.getItem(API_KEY_STORAGE_ITEM);
 
-  const runSearch = async (loadMore: boolean) => {
+  const formQuery = (): SearchQuery => ({
+    country,
+    order,
+    topic: topic.trim() || undefined,
+    topicInLocalLanguage: topicIsLocal && topic.trim() ? true : undefined,
+    categoryId: category === 'all' ? undefined : category,
+    onlyGeotagged: onlyGeotagged || undefined,
+    publishedAfter: new Date(Date.now() - Number(period) * 24 * 60 * 60 * 1000).toISOString(),
+  });
+
+  const runSearch = async (loadMore: boolean, newQuery?: SearchQuery) => {
     if (busy) return;
     const apiKey = getApiKey();
     setMissingKey(!apiKey);
     if (!apiKey) return;
 
     // "Carregar mais" repete a última busca, mesmo que os filtros tenham mudado depois
-    const query: SearchQuery = loadMore && lastQuery ? lastQuery : {
-      country,
-      order,
-      topic: topic.trim() || undefined,
-      onlyGeotagged: onlyGeotagged || undefined,
-      publishedAfter: new Date(Date.now() - Number(period) * 24 * 60 * 60 * 1000).toISOString(),
-    };
+    const query: SearchQuery = loadMore && lastQuery ? lastQuery : newQuery ?? formQuery();
 
     if (loadMore) setIsLoadingMore(true);
     else setIsSearching(true);
@@ -119,11 +191,14 @@ export default function ShortsPage() {
           const seen = new Set(prev.map(short => short.id));
           return [...prev, ...found.filter(short => !seen.has(short.id))];
         });
+        setDiscardedOutsideCountry(prev => prev + (result.discardedOutsideCountry ?? 0));
       } else {
         setShorts(found);
         setSelectedIds([]);
         setLastQuery(query);
         setSortKey(defaultSortFor(query.order));
+        setUsedQuery(result.query ?? null);
+        setDiscardedOutsideCountry(result.discardedOutsideCountry ?? 0);
       }
       setNextPageToken(result.nextPageToken);
     } catch (e: any) {
@@ -132,6 +207,15 @@ export default function ShortsPage() {
       setIsSearching(false);
       setIsLoadingMore(false);
     }
+  };
+
+  // Termo em alta: vira o tema, na mesma busca de antes, e já está no idioma do país
+  const searchByTerm = (term: string) => {
+    if (!lastQuery) return;
+    setTopic(term);
+    setTopicIsLocal(true);
+    setCountry(lastQuery.country);
+    runSearch(false, { ...lastQuery, topic: term, topicInLocalLanguage: true });
   };
 
   const analyze = async (videoIds: string[]) => {
@@ -246,7 +330,7 @@ export default function ShortsPage() {
               <Input
                 id="shorts-topic"
                 value={topic}
-                onChange={(e) => setTopic(e.target.value)}
+                onChange={(e) => { setTopic(e.target.value); setTopicIsLocal(false); }}
                 placeholder="Ex.: emagrecimento, skincare, renda extra..."
               />
               <p className="text-xs text-muted-foreground">
@@ -254,10 +338,10 @@ export default function ShortsPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="shorts-country">País</Label>
-                <Select value={country} onValueChange={setCountry}>
+                <Select value={country} onValueChange={(value) => { setCountry(value); setTopicIsLocal(false); }}>
                   <SelectTrigger id="shorts-country"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {COUNTRIES.map(option => (
@@ -288,7 +372,23 @@ export default function ShortsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="shorts-category">Categoria</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger id="shorts-category"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CATEGORY_OPTIONS.map(option => (
+                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            {category !== 'all' && (
+              <p className="-mt-2 text-xs text-muted-foreground">
+                Quem escolhe a categoria é o criador, e muitos deixam a padrão (Pessoas e blogs). O filtro pode esconder bons vídeos.
+              </p>
+            )}
 
             <div className="flex items-start gap-2">
               <Checkbox
@@ -336,6 +436,7 @@ export default function ShortsPage() {
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <p className="text-sm text-muted-foreground">
               {onlyFromCountry ? `${visibleShorts.length} de ${shorts.length} Shorts` : `${shorts.length} Shorts encontrados`}
+              {discardedOutsideCountry > 0 && ` · ${discardedOutsideCountry} descartados por estarem marcados fora de ${searchCountryName}`}
             </p>
             <div
               className="flex items-center gap-2"
@@ -369,6 +470,8 @@ export default function ShortsPage() {
         </div>
       )}
 
+      <TrendingTerms terms={trendingTerms} translations={trendingTranslations} disabled={busy} onSelect={searchByTerm} />
+
       {visibleShorts.length > 0 && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(min(260px,100%),1fr))] gap-4">
           {visibleShorts.map(short => (
@@ -390,6 +493,7 @@ export default function ShortsPage() {
         <div className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
           Nenhum Short encontrado com esses filtros. Tente outro tema ou um período maior
           {nextPageToken ? ', ou carregue mais resultados' : ''}.
+          {discardedOutsideCountry > 0 && ` ${discardedOutsideCountry} vídeos foram descartados por estarem marcados fora de ${searchCountryName}.`}
         </div>
       )}
 

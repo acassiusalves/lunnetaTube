@@ -9,6 +9,8 @@
  * (Açores, Canárias...) ficam cobertos só em parte.
  */
 
+import { iso1A2Code } from '@rapideditor/country-coder';
+
 export interface CountryGeo {
   lat: number;
   lng: number;
@@ -134,4 +136,12 @@ export function getLocationFilter(code: string): { location: string; locationRad
   const geo = COUNTRY_GEO[code.toUpperCase()];
   if (!geo) return undefined;
   return { location: `${geo.lat},${geo.lng}`, locationRadius: `${geo.radiusKm}km` };
+}
+
+// O filtro location do search.list é impreciso: vídeos marcados com o país vizinho inteiro
+// ("España") ou fora do raio ("Madrid", a 402 km de Portugal) também entram (testado no
+// APIs Explorer em 2026-09-25). As coordenadas de cada vídeo (videos.list, recordingDetails)
+// dizem o país de verdade, pelas fronteiras (limites offline do country-coder)
+export function countryAtPoint(lat: number, lng: number): string | null {
+  return iso1A2Code([lng, lat]) ?? null;
 }

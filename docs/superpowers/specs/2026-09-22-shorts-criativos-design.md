@@ -227,3 +227,45 @@ português.
   resultados. O texto de ajuda sugere o período de 90 dias.
 - Pode ser combinada com o filtro "Só canais de {país}", que age nos resultados já
   carregados.
+
+### Correção: vídeos do país vizinho (2026-09-25)
+Em produção, Portugal sem tema e com a opção ligada trouxe só Shorts espanhóis. No APIs
+Explorer, os vídeos vinham marcados como "España" (o YouTube guarda o centro do país) e
+"Madrid" (a 402 km do centro de Portugal, fora do raio). Ou seja, o filtro `location` do
+YouTube deixa passar vídeos do país vizinho.
+
+- `videos.list` passa a pedir também `recordingDetails` (mesmo custo). A documentação diz
+  que `recordingDetails.location` está descontinuado, mas o campo ainda vem preenchido.
+- Com a opção ligada, `searchShorts` descarta os vídeos cujas coordenadas caem em outro
+  país (`countryAtPoint`, com as fronteiras offline de `@rapideditor/country-coder`).
+  Vídeos sem coordenadas ficam, porque não há como conferir.
+- A resposta traz `discardedOutsideCountry`, e a página mostra quantos foram descartados.
+
+## Atualização: categoria e termos em alta (2026-09-25)
+
+Pedido do usuário: é difícil saber o que buscar em outro idioma. A API do YouTube não
+informa os termos mais buscados de um país (só o dono do canal vê as buscas que levam
+ao próprio canal), e a API do Google Trends está em alfa fechado. Sugestões de busca
+feitas por IA ficaram para depois.
+
+### Categoria
+- Novo filtro **Categoria** (`videoCategoryId` no `search.list`), com "Todas as
+  categorias" como padrão. Testado no APIs Explorer: Portugal + "Guias e estilo" (26)
+  trouxe 67.340 Shorts.
+- Lista fixa na página com as 15 categorias que o criador pode escolher (os IDs são
+  iguais em todos os países).
+- Aviso quando há categoria escolhida: quem escolhe é o criador, e muitos deixam a
+  padrão ("Pessoas e blogs").
+
+### Termos em alta
+- Cada `ShortVideo` traz `terms`: hashtags do título e da descrição e tags do vídeo,
+  em minúsculas, sem termos genéricos (#shorts, #viral, #fyp...). Os dados já vêm no
+  `videos.list`; não há custo extra.
+- A página mostra os até 15 termos usados por **mais canais diferentes** (no mínimo 2)
+  entre os Shorts na tela (`topTerms`). Os termos da própria busca (`query` devolvido
+  por `searchShorts`) ficam de fora.
+- Em países que não falam português, os termos ganham a tradução para o português
+  (`translateContent`, Gemini), em cache na página.
+- Clicar num termo faz uma nova busca (1 busca) com a mesma configuração da anterior e o
+  termo como tema. Como o termo já está no idioma do país, `topicInLocalLanguage` evita
+  que ele seja traduzido de novo.

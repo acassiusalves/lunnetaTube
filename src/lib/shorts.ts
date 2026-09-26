@@ -23,6 +23,7 @@ export interface ShortVideo {
   country: string;              // código ISO do país da busca
   channelCountry: string | null; // país informado pelo canal (opcional no YouTube)
   audioLanguage: string | null;  // idioma do áudio marcado pelo criador (ex.: pt-PT)
+  terms: string[];               // hashtags e tags do vídeo, normalizadas (termos em alta)
   viralScore: number | null;    // views ÷ inscritos
   viewsPerDay: number;
   engagementRate: number;       // (likes + comentários) ÷ views, em %

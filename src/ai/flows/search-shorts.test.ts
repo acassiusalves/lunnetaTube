@@ -5,7 +5,10 @@ import assert from 'node:assert/strict';
 delete process.env.GEMINI_API_KEY;
 delete process.env.GOOGLE_API_KEY;
 
-type VideoFixture = { duration: string; width?: number; height?: number; channelId: string; views: string; audio?: string };
+type VideoFixture = {
+  duration: string; width?: number; height?: number; channelId: string; views: string; audio?: string;
+  location?: [number, number]; title?: string; description?: string; tags?: string[];
+};
 
 const calls: { method: string; params: any }[] = [];
 let searchIds: string[] = [];
@@ -34,7 +37,9 @@ const fakeYoutubeModule = {
               return {
                 id,
                 snippet: {
-                  title: `Título ${id}`,
+                  title: fixture.title ?? `Título ${id}`,
+                  description: fixture.description ?? '',
+                  tags: fixture.tags,
                   channelId: fixture.channelId,
                   channelTitle: 'Canal',
                   publishedAt: '2026-09-21T12:00:00Z',
@@ -44,6 +49,9 @@ const fakeYoutubeModule = {
                 contentDetails: { duration: fixture.duration },
                 statistics: { viewCount: fixture.views, likeCount: '10', commentCount: '5' },
                 player: fixture.width ? { embedWidth: String(fixture.width), embedHeight: String(fixture.height) } : {},
+                recordingDetails: fixture.location
+                  ? { location: { latitude: fixture.location[0], longitude: fixture.location[1], altitude: 0 } }
+                  : undefined,
               };
             }),
           },
@@ -66,6 +74,20 @@ const fakeYoutubeModule = {
     },
   }),
 };
+
+// Tradução simulada: registra a chamada e falha, como acontece sem chave do Gemini
+const translateModulePath = require.resolve('@/ai/flows/translate-keyword');
+require.cache[translateModulePath] = {
+  id: translateModulePath,
+  filename: translateModulePath,
+  loaded: true,
+  exports: {
+    translateKeyword: async (params: any) => {
+      calls.push({ method: 'translate', params });
+      throw new Error('sem Gemini nos testes');
+    },
+  },
+} as any;
 
 const youtubeModulePath = require.resolve('googleapis/build/src/apis/youtube');
 require.cache[youtubeModulePath] = {
@@ -119,7 +141,7 @@ test('sem tema usa os termos locais e mantém só Shorts verticais de até 3 min
   assert.equal(search.maxResults, 50);
 
   const videos = calls.find(c => c.method === 'videos')!.params;
-  assert.deepEqual(videos.part, ['snippet', 'contentDetails', 'statistics', 'player']);
+  assert.deepEqual(videos.part, ['snippet', 'contentDetails', 'statistics', 'player', 'recordingDetails']);
   assert.equal(videos.maxHeight, 640);
 });
 
@@ -158,7 +180,7 @@ test('usa o tema como q e repassa ordenação e paginação', async () => {
 test('sem tema em país de outro idioma usa os termos em inglês quando a tradução falha', async () => {
   await searchShorts({ ...BASE, country: 'JP' });
 
-  const search = calls[0].params;
+  const search = calls.find(c => c.method === 'search')!.params;
   assert.equal(search.q, 'tips|"how to"|hack|"did you know"');
   assert.equal(search.relevanceLanguage, 'ja');
   assert.equal(search.regionCode, 'JP');
@@ -221,4 +243,65 @@ test('"só vídeos marcados no país" envia location e locationRadius do país',
   const withoutGeo = calls.find(c => c.method === 'search')!.params;
   assert.equal(withoutGeo.location, undefined);
   assert.equal(withoutGeo.locationRadius, undefined);
+});
+
+test('"só vídeos marcados no país" descarta os vídeos com coordenadas em outro país', async () => {
+  searchIds = ['espanha', 'madrid', 'lisboa', 'semCoordenadas'];
+  videoFixtures = {
+    espanha: { duration: 'PT30S', width: 360, height: 640, channelId: 'c1', views: '1000', location: [40.463667, -3.74922] },
+    madrid: { duration: 'PT30S', width: 360, height: 640, channelId: 'c1', views: '1000', location: [40.4167279, -3.7032905] },
+    lisboa: { duration: 'PT30S', width: 360, height: 640, channelId: 'c2', views: '1000', location: [38.72, -9.14] },
+    semCoordenadas: { duration: 'PT30S', width: 360, height: 640, channelId: 'c3', views: '1000' },
+  };
+
+  const result = await searchShorts({ ...BASE, country: 'PT', onlyGeotagged: true });
+
+  assert.deepEqual(result.shorts?.map(s => s.id), ['lisboa', 'semCoordenadas']);
+  assert.equal(result.discardedOutsideCountry, 2);
+  // Os inscritos só são buscados para os canais que ficaram
+  assert.deepEqual(calls.find(c => c.method === 'channels')!.params.id, ['c2', 'c3']);
+});
+
+test('sem a opção de localização, as coordenadas não filtram nada', async () => {
+  searchIds = ['espanha'];
+  videoFixtures = { espanha: { duration: 'PT30S', width: 360, height: 640, channelId: 'c1', views: '1000', location: [40.463667, -3.74922] } };
+
+  const result = await searchShorts({ ...BASE, country: 'PT' });
+
+  assert.deepEqual(result.shorts?.map(s => s.id), ['espanha']);
+  assert.equal(result.discardedOutsideCountry, undefined);
+});
+
+test('a categoria vira videoCategoryId', async () => {
+  await searchShorts({ ...BASE, categoryId: '26' });
+  assert.equal(calls.find(c => c.method === 'search')!.params.videoCategoryId, '26');
+
+  calls.length = 0;
+  await searchShorts(BASE);
+  assert.equal(calls.find(c => c.method === 'search')!.params.videoCategoryId, undefined);
+});
+
+test('tema já no idioma do país (clique em termo em alta) não é traduzido de novo', async () => {
+  await searchShorts({ ...BASE, country: 'ES', topic: 'maquillaje', topicInLocalLanguage: true });
+  assert.equal(calls.filter(c => c.method === 'translate').length, 0);
+  assert.equal(calls.find(c => c.method === 'search')!.params.q, 'maquillaje');
+
+  calls.length = 0;
+  await searchShorts({ ...BASE, country: 'ES', topic: 'maquiagem' });
+  assert.equal(calls.filter(c => c.method === 'translate').length, 1);
+});
+
+test('cada Short traz seus termos e a resposta traz o q usado na busca', async () => {
+  searchIds = ['a'];
+  videoFixtures = {
+    a: {
+      duration: 'PT30S', width: 360, height: 640, channelId: 'c1', views: '1000',
+      title: 'Receita fácil #shorts #receita', description: 'Veja mais #airfryer', tags: ['Air Fryer', 'receita'],
+    },
+  };
+
+  const result = await searchShorts(BASE);
+
+  assert.deepEqual(result.shorts?.[0].terms, ['receita', 'airfryer', 'air fryer']);
+  assert.equal(result.query, 'dicas|"como fazer"|truque|"você sabia"');
 });

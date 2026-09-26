@@ -29,6 +29,7 @@ function makeShort(id: string, overrides: Partial<ShortVideo>): ShortVideo {
     country: 'BR',
     channelCountry: null,
     audioLanguage: null,
+    terms: [],
     viralScore: null,
     viewsPerDay: 0,
     engagementRate: 0,
